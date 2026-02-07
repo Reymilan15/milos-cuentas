@@ -3,20 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch'); 
 const https = require('https');
-const cors = require('cors'); // Necesario para que el móvil pueda hablar con el servidor
+const cors = require('cors');
 
 const app = express();
-// AJUSTE: Render asigna el puerto automáticamente
 const PORT = process.env.PORT || 3000;
 
-const publicPath = path.join(__dirname, 'public');
+// CAMBIO: Ahora publicPath es la raíz del proyecto
+const publicPath = __dirname; 
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Agente para ignorar errores de certificados si la conexión es inestable
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
-app.use(cors()); // Permitir conexiones desde cualquier origen (móviles/GitHub Pages)
+app.use(cors()); 
 app.use(express.json());
+// Servir archivos (css, js, manifest) desde la raíz
 app.use(express.static(publicPath));
 
 let currentRates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
@@ -34,12 +34,12 @@ async function updateExchangeRates() {
             console.log(`✅ Tasa actualizada: ${currentRates.USD} BS`);
         }
     } catch (error) {
-        console.error("❌ No se pudo conectar con la API de tasas. Usando valores por defecto.");
+        console.error("❌ Error en API de tasas. Usando valores por defecto.");
     }
 }
 
 updateExchangeRates();
-setInterval(updateExchangeRates, 3600000); // Actualizar cada hora
+setInterval(updateExchangeRates, 3600000);
 
 // --- MANEJO DE BASE DE DATOS ---
 const readDB = () => {
@@ -60,7 +60,6 @@ const writeDB = (data) => {
 
 // --- RUTAS DE LA API ---
 
-// Ruta manual para actualizar tasa
 app.get('/set-rate/:valor', (req, res) => {
     const nuevoValor = parseFloat(req.params.valor);
     if (!isNaN(nuevoValor)) {
@@ -119,9 +118,17 @@ app.post('/api/save', (req, res) => {
     }
 });
 
-// Ruta principal
+// CAMBIO: Ruta para servir el index.html desde la raíz
+app.get('*', (req, res) => { 
+    res.sendFile(path.join(__dirname, 'index.html')); 
+});
+
+app.listen(PORT, () => {
+    console.log(`✅ Servidor Mil Cuentas activo en puerto: ${PORT}`);
+});
 app.get('/', (req, res) => { res.sendFile(path.join(publicPath, 'index.html')); });
 
 app.listen(PORT, () => {
     console.log(`✅ Servidor Mil Cuentas activo en puerto: ${PORT}`);
+
 });
