@@ -6,9 +6,9 @@ const https = require('https');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Render usa el puerto 10000 por defecto, pero process.env.PORT es lo más seguro
+const PORT = process.env.PORT || 10000; 
 
-// CAMBIO: Ahora publicPath es la raíz del proyecto
 const publicPath = __dirname; 
 const DB_FILE = path.join(__dirname, 'database.json');
 
@@ -16,7 +16,6 @@ const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 app.use(cors()); 
 app.use(express.json());
-// Servir archivos (css, js, manifest) desde la raíz
 app.use(express.static(publicPath));
 
 let currentRates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
@@ -34,7 +33,7 @@ async function updateExchangeRates() {
             console.log(`✅ Tasa actualizada: ${currentRates.USD} BS`);
         }
     } catch (error) {
-        console.error("❌ Error en API de tasas. Usando valores por defecto.");
+        console.error("❌ Error en API de tasas.");
     }
 }
 
@@ -59,18 +58,6 @@ const writeDB = (data) => {
 };
 
 // --- RUTAS DE LA API ---
-
-app.get('/set-rate/:valor', (req, res) => {
-    const nuevoValor = parseFloat(req.params.valor);
-    if (!isNaN(nuevoValor)) {
-        currentRates.USD = nuevoValor;
-        currentRates.EUR = nuevoValor * 1.09; 
-        res.send(`<body style="font-family:sans-serif;text-align:center;padding:50px;">
-                    <h1 style="color:green;">✅ Tasa Actualizada</h1>
-                    <p>Nuevo valor: <b>${nuevoValor} BS</b></p>
-                  </body>`);
-    } else { res.status(400).send("Valor no válido"); }
-});
 
 app.post('/api/register', (req, res) => {
     const { username, name, lastname, email, password } = req.body;
@@ -118,17 +105,24 @@ app.post('/api/save', (req, res) => {
     }
 });
 
-// CAMBIO: Ruta para servir el index.html desde la raíz
+// Ruta comodín para el frontend
 app.get('*', (req, res) => { 
     res.sendFile(path.join(__dirname, 'index.html')); 
 });
 
-app.listen(PORT, () => {
+// --- INICIO DEL SERVIDOR CON MANEJO DE ERROR ---
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor Mil Cuentas activo en puerto: ${PORT}`);
 });
-app.get('/', (req, res) => { res.sendFile(path.join(publicPath, 'index.html')); });
 
-app.listen(PORT, () => {
-    console.log(`✅ Servidor Mil Cuentas activo en puerto: ${PORT}`);
-
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`❌ El puerto ${PORT} está ocupado. Reintentando...`);
+        setTimeout(() => {
+            server.close();
+            server.listen(PORT);
+        }, 1000);
+    } else {
+        console.error("❌ Error de servidor:", err);
+    }
 });
