@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mil Cuentas - Gestión de Gastos</title>
+    
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mil Cuentas">
+    
+    <link rel="manifest" href="/milos-cuentas/manifest.json">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <div id="login-screen" class="auth-container">
+        <div class="auth-box">
+            <h1>Mil Cuentas</h1>
+            <p id="auth-title">Iniciar Sesión</p>
+            
+            <div id="login-buttons">
+                <input type="text" id="username" placeholder="Usuario o Correo Electrónico">
+                <input type="password" id="login-password" placeholder="Contraseña">
+                
+                <button onclick="login()" class="btn-add">Entrar a mi Cuenta</button>
+                <p style="font-size: 13px; margin-top: 15px;">
+                    ¿No tienes cuenta? <span onclick="toggleAuth(true)" style="color: #06b6d4; cursor: pointer; font-weight: bold;">Regístrate aquí</span>
+                </p>
+            </div>
+
+            <div id="register-buttons" style="display: none;">
+                <input type="text" id="reg-username" placeholder="Nombre de usuario (ej: juanito123)">
+                <input type="text" id="reg-name" placeholder="Tu Nombre">
+                <input type="text" id="reg-lastname" placeholder="Tu Apellido">
+                <input type="email" id="reg-email" placeholder="Correo Electrónico">
+                <input type="password" id="reg-password" placeholder="Contraseña (letras y números)">
+                
+                <button onclick="register()" class="btn-save" style="background-color: #22c55e; margin-top: 10px;">Crear Cuenta Nueva</button>
+                
+                <p style="font-size: 13px; margin-top: 15px;">
+                    ¿Ya tienes cuenta? 
+                    <span onclick="toggleAuth(false)" style="color: #06b6d4; cursor: pointer; font-weight: bold; text-decoration: underline;">
+                        Inicia sesión
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-container" style="display: none;">
+        <header>
+            <div class="user-header">
+                <span>Usuario: <strong id="display-user"></strong></span>
+                <button onclick="logout()" class="btn-logout">Salir</button>
+            </div>
+
+            <h1>Mil Cuentas</h1>
+            
+            <div class="budget-setup">
+                <input type="number" id="total-budget" placeholder="Presupuesto Total (BS)">
+                <input type="number" id="spending-limit" placeholder="Límite máximo de gasto (BS)">
+                
+                <div class="button-group">
+                    <button onclick="setBudget()" class="btn-save">Fijar Presupuesto</button>
+                    <button onclick="resetApp()" class="btn-reset">Resetear</button>
+                </div>
+            </div>
+            
+            <div class="balance-card" id="balance-card">
+                <p>Presupuesto Disponible</p>
+                <h2 id="remaining-display">0.00 BS</h2>
+                
+                <div class="view-options">
+                    <span>Ver en:</span>
+                    <button onclick="changeView('VES')">BS</button>
+                    <button onclick="changeView('USD')">USD</button>
+                    <button onclick="changeView('EUR')">EUR</button>
+                </div>
+                <small id="budget-status">Introduce un presupuesto</small>
+            </div>
+        </header>
+
+        <section class="form-section">
+            <input type="text" id="desc" placeholder="¿En qué gastaste?">
+            <input type="number" id="amount" placeholder="Monto">
+            <select id="currency">
+                <option value="VES">Bolívares (BS)</option>
+                <option value="USD">Dólares ($)</option>
+                <option value="EUR">Euros (€)</option>
+            </select>
+            <button onclick="addTransaction()" class="btn-add">Registrar Gasto</button>
+        </section>
+
+        <section class="history">
+            <h3>Historial de Gastos</h3>
+            <ul id="transaction-list"></ul>
+        </section>
+    </div>
+
+    <div id="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(5px); padding:20px;">
+        <div style="background:white; padding:30px; border-radius:24px; max-width:380px; width:100%; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-family: sans-serif;">
+            <div id="modal-icon" style="font-size: 60px; margin-bottom: 10px;">⚠️</div>
+            <h2 id="modal-title" style="margin: 0 0 10px 0; color: #111827; font-size: 1.5rem;">Título</h2>
+            <p id="modal-text" style="color: #4b5563; margin-bottom: 25px; line-height: 1.6; font-size: 1rem;"></p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button id="modal-cancel-btn" style="flex:1; padding:12px; border-radius:12px; border:1px solid #e5e7eb; background:#f9fafb; color:#374151; font-weight:600; cursor:pointer;">Cancelar</button>
+                <button id="modal-ok-btn" style="flex:1; padding:12px; border-radius:12px; border:none; background:#4f46e5; color:white; font-weight:600; cursor:pointer;">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Animación para el Modal */
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        #modal-ok-btn:active, #modal-cancel-btn:active { transform: scale(0.95); }
+    </style>
+
+    <script src="script.js"></script>
+</body>
+</html>

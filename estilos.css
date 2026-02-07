@@ -1,0 +1,154 @@
+/* Variables de color */
+:root {
+    --primary: #4f46e5;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --accent: #06b6d4;
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --text-white: #ffffff;
+    --text-muted: #cbd5e1;
+}
+
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background-color: var(--bg-dark); 
+    color: var(--text-white); 
+    margin: 0; 
+    display: flex; 
+    justify-content: center; 
+    padding: 20px; 
+    -webkit-touch-callout: none; 
+    -webkit-user-select: none;   
+    user-select: none;
+    overscroll-behavior-y: contain;
+}
+input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* --- PANTALLA DE LOGIN --- */
+.auth-container { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    width: 100%;
+}
+
+.auth-box { 
+    background: var(--card-bg); 
+    padding: 40px; 
+    border-radius: 20px; 
+    text-align: center; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    width: 100%;
+    max-width: 350px;
+}
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.app-container { 
+    width: 100%; 
+    max-width: 450px; 
+    display: none; /* Se activa con JS al hacer login */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+header, .form-section, .history { 
+    background: var(--card-bg); 
+    padding: 20px; 
+    border-radius: 15px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+}
+
+/* --- INFO DE USUARIO Y BOTONES --- */
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.btn-logout {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-logout:hover { background: var(--danger); color: white; }
+
+/* --- TARJETA DE BALANCE --- */
+.balance-card { 
+    background: var(--primary); 
+    padding: 25px; 
+    border-radius: 12px; 
+    text-align: center; 
+    transition: background 0.3s ease;
+}
+
+#remaining-display { font-size: 2.5rem; margin: 10px 0; }
+
+.view-options { 
+    margin: 15px 0; 
+    display: flex; 
+    justify-content: center; 
+    gap: 8px; 
+}
+
+.view-options button { 
+    width: auto; 
+    padding: 6px 15px; 
+    background: rgba(255,255,255,0.1); 
+    border: 1px solid white; 
+    color: white; 
+    cursor: pointer; 
+}
+
+.view-options button:hover { background: white; color: var(--primary); }
+
+/* --- FORMULARIOS Y BOTONES --- */
+input, select, button { 
+    width: 100%; 
+    padding: 12px; 
+    margin: 8px 0; 
+    border-radius: 8px; 
+    border: none; 
+    outline: none; 
+    box-sizing: border-box;
+}
+
+input { background: #334155; color: white; }
+
+.btn-save { background: var(--success); color: white; font-weight: bold; cursor: pointer; }
+.btn-reset { background: var(--danger); color: white; font-weight: bold; cursor: pointer; }
+.btn-add { background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
+
+/* --- HISTORIAL --- */
+ul { list-style: none; padding: 0; }
+li { 
+    background: #334155; 
+    padding: 12px; 
+    border-radius: 8px; 
+    margin-bottom: 8px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-left: 4px solid var(--accent); 
+}
+
+li span { font-size: 13px; color: var(--text-muted); }
+input[type="number"], input[type="text"] {
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #374151;
+    background-color: #1f2937;
+    color: white;
+}

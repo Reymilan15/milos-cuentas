@@ -1,0 +1,36 @@
+{
+  "jose": {
+    "name": "jose",
+    "lastname": "milano",
+    "email": "jmmilanoreyes2@gmail.com",
+    "password": "Reym1l@n12",
+    "budget": 50000,
+    "transactions": [
+      {
+        "id": 1769640979822,
+        "desc": "comida",
+        "originalAmount": 25000,
+        "originalCurrency": "VES",
+        "valueVES": 25000
+      }
+    ]
+  },
+  "marve": {
+    "name": "marvelys",
+    "lastname": "reyes",
+    "email": "marvereyes14@gmail.com",
+    "password": "marvejose14",
+    "budget": 1000,
+    "transactions": [],
+    "spendingLimit": 200
+  },
+  "milo": {
+    "name": "José Manuel",
+    "lastname": "Milano",
+    "email": "milanoreyes@gmail.com",
+    "password": "JOSEmanuel12",
+    "budget": 0,
+    "spendingLimit": 0,
+    "transactions": []
+  }
+}
