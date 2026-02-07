@@ -1,11 +1,4 @@
-Tu código de script.js está muy bien estructurado. He realizado unos pequeños ajustes de "mantenimiento" para que la experiencia de usuario sea más fluida, especialmente considerando que Render pone a dormir los servidores gratuitos.
 
-He añadido una función para eliminar gastos individuales (que te mencioné antes) y he optimizado la lógica de renderizado para que la lista de transacciones incluya el botón de borrar.
-
-📄 script.js (Versión Optimizada)
-JavaScript
-
-// --- 1. CONFIGURACIÓN ---
 const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3000' 
     : window.location.origin;
@@ -235,4 +228,5 @@ window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
 };
+
 
