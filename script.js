@@ -104,7 +104,12 @@ async function login() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('display-user').innerText = `${data.name} ${data.lastname}`;
+            
+            // Cargar valores en los inputs
             document.getElementById('total-budget').value = budgetVES > 0 ? budgetVES : "";
+            if(document.getElementById('spending-limit')) {
+                document.getElementById('spending-limit').value = spendingLimitVES > 0 ? spendingLimitVES : "";
+            }
             
             renderAll();
         } else {
@@ -143,8 +148,22 @@ async function addTransaction() {
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
+    // Validación 1: Presupuesto total (Bloqueo)
     if (amountInVES > remainingBefore) {
         return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
+    }
+
+    // Validación 2: Límite de alerta (Advertencia)
+    const totalDespues = totalSpentSoFar + amountInVES;
+    if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
+        const excedido = totalDespues - spendingLimitVES;
+        const confirmar = await showModal(
+            "¡Límite Excedido!", 
+            `Con este gasto superarás tu límite de ${fmt(spendingLimitVES)} BS por ${fmt(excedido)} BS. ¿Registrar de todos modos?`, 
+            "⚠️", 
+            true
+        );
+        if (!confirmar) return;
     }
 
     transactions.push({ 
@@ -158,6 +177,22 @@ async function addTransaction() {
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
     await syncWithServer();
+    renderAll();
+}
+
+async function setBudget() {
+    const val = parseFloat(document.getElementById('total-budget').value) || 0;
+    budgetVES = val;
+    await syncWithServer();
+    renderAll();
+}
+
+// Nueva función para el límite
+async function setLimit() {
+    const val = parseFloat(document.getElementById('spending-limit').value) || 0;
+    spendingLimitVES = val;
+    await syncWithServer();
+    await showModal("Límite Guardado", `Se activó la alerta al pasar los ${fmt(val)} BS.`, "🔔");
     renderAll();
 }
 
@@ -200,10 +235,14 @@ function renderAll() {
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
+    // Cambiar colores según estado
     if (budgetVES > 0) {
         if (remainingVES <= 0.01) {
             status.innerText = "🚨 SALDO AGOTADO";
             card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)"; 
+        } else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) {
+            status.innerText = "⚠️ LÍMITE EXCEDIDO";
+            card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; 
         } else {
             status.innerText = `Balance en ${currentView}`;
             card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
@@ -214,13 +253,6 @@ function renderAll() {
     }
 }
 
-async function setBudget() {
-    const val = parseFloat(document.getElementById('total-budget').value) || 0;
-    budgetVES = val;
-    await syncWithServer();
-    renderAll();
-}
-
 function changeView(iso) { currentView = iso; renderAll(); }
 function logout() { location.reload(); }
 
@@ -228,5 +260,4 @@ window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
 };
-
 
