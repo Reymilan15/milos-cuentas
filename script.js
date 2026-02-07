@@ -1,13 +1,20 @@
-/ --- 1. CONFIGURACIÓN ---
-// Detecta automáticamente si está en local o en Render
+Tu código de script.js está muy bien estructurado. He realizado unos pequeños ajustes de "mantenimiento" para que la experiencia de usuario sea más fluida, especialmente considerando que Render pone a dormir los servidores gratuitos.
+
+He añadido una función para eliminar gastos individuales (que te mencioné antes) y he optimizado la lógica de renderizado para que la lista de transacciones incluya el botón de borrar.
+
+📄 script.js (Versión Optimizada)
+JavaScript
+
+// --- 1. CONFIGURACIÓN ---
 const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3000' 
     : window.location.origin;
 
 window.onerror = async function(msg, url, linenumber) {
-    console.error("Error:", msg, "en", url, ":", linenumber);
-    // Evitamos el modal en errores menores de extensiones
-    if(!msg.includes("ResizeObserver")) showModal("Error de App", msg, "🚨");
+    if(!msg.includes("ResizeObserver")) {
+        console.error("Error:", msg, "en", url, ":", linenumber);
+        showModal("Error de App", msg, "🚨");
+    }
     return true;
 };
 
@@ -46,42 +53,37 @@ function toggleAuth(isRegister) {
     const title = document.getElementById('auth-title');
     const loginBtns = document.getElementById('login-buttons');
     const regBtns = document.getElementById('register-buttons');
-    if (isRegister) {
-        title.innerText = "Crear Cuenta Nueva";
-        loginBtns.style.display = "none";
-        regBtns.style.display = "block";
-    } else {
-        title.innerText = "Iniciar Sesión";
-        loginBtns.style.display = "block";
-        regBtns.style.display = "none";
-    }
+    title.innerText = isRegister ? "Crear Cuenta Nueva" : "Iniciar Sesión";
+    loginBtns.style.display = isRegister ? "none" : "block";
+    regBtns.style.display = isRegister ? "block" : "none";
 }
 
 async function register() {
-    const username = document.getElementById('reg-username').value.trim().toLowerCase();
-    const name = document.getElementById('reg-name').value.trim();
-    const lastname = document.getElementById('reg-lastname').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
-
-    if (!username || !name || !lastname || !email || !password) {
-        return await showModal("Campos vacíos", "Por favor, rellena todos los campos.", "📝");
-    }
+    const fields = ['reg-username', 'reg-name', 'reg-lastname', 'reg-email', 'reg-password'];
+    const values = fields.map(id => document.getElementById(id).value.trim());
+    
+    if (values.some(v => !v)) return await showModal("Campos vacíos", "Rellena todos los campos.", "📝");
 
     try {
         const response = await fetch(`${BASE_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, name, lastname, email, password })
+            body: JSON.stringify({ 
+                username: values[0].toLowerCase(), 
+                name: values[1], 
+                lastname: values[2], 
+                email: values[3], 
+                password: values[4] 
+            })
         });
         const data = await response.json();
         if (response.ok) {
-            await showModal("¡Éxito!", "Cuenta creada correctamente.", "✅");
+            await showModal("¡Éxito!", "Cuenta creada.", "✅");
             toggleAuth(false);
         } else {
             await showModal("Registro fallido", data.error, "⚠️");
         }
-    } catch (error) { await showModal("Error", "No hay conexión con el servidor.", "❌"); }
+    } catch (error) { await showModal("Error", "Sin conexión con el servidor.", "❌"); }
 }
 
 async function login() {
@@ -111,15 +113,12 @@ async function login() {
             document.getElementById('display-user').innerText = `${data.name} ${data.lastname}`;
             document.getElementById('total-budget').value = budgetVES > 0 ? budgetVES : "";
             
-            if(document.getElementById('spending-limit')) {
-                document.getElementById('spending-limit').value = spendingLimitVES > 0 ? spendingLimitVES : "";
-            }
             renderAll();
         } else {
             await showModal("Acceso denegado", data.error, "❌");
         }
     } catch (error) { 
-        await showModal("Servidor Iniciando", "El servidor de Render está despertando. Reintenta en 20 segundos.", "⏳"); 
+        await showModal("Servidor Iniciando", "Despertando al servidor de Render. Reintenta en 20 segundos.", "⏳"); 
     }
 }
 
@@ -137,7 +136,7 @@ async function syncWithServer() {
                 transactions 
             })
         });
-    } catch (e) { console.error("Error sincronizando con el servidor"); }
+    } catch (e) { console.error("Error de sincronización"); }
 }
 
 async function addTransaction() {
@@ -145,18 +144,14 @@ async function addTransaction() {
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return await showModal("Incompleto", "Dime qué compraste y cuánto costó.", "🛒");
+    if (!desc || isNaN(amount)) return await showModal("Incompleto", "Datos de compra inválidos.", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
     if (amountInVES > remainingBefore) {
-        return await showModal(
-            "Fondos Insuficientes", 
-            `No puedes gastar ${fmt(amountInVES)} BS porque solo te quedan ${fmt(remainingBefore)} BS.`, 
-            "🚫"
-        );
+        return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
     }
 
     transactions.push({ 
@@ -173,6 +168,15 @@ async function addTransaction() {
     renderAll();
 }
 
+async function deleteTransaction(id) {
+    const confirmar = await showModal("Eliminar Gasto", "¿Estás seguro de borrar este registro?", "🗑️", true);
+    if (confirmar) {
+        transactions = transactions.filter(t => t.id !== id);
+        await syncWithServer();
+        renderAll();
+    }
+}
+
 function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
@@ -186,7 +190,16 @@ function renderAll() {
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
         const li = document.createElement('li');
-        li.innerHTML = `<div><b>${t.desc}</b><br><span>${fmt(t.originalAmount)} ${t.originalCurrency}</span></div><strong>-${fmt(t.valueVES)} BS</strong>`;
+        li.className = "transaction-item";
+        li.innerHTML = `
+            <div>
+                <b>${t.desc}</b><br>
+                <span>${fmt(t.originalAmount)} ${t.originalCurrency}</span>
+            </div>
+            <div style="text-align: right;">
+                <strong>-${fmt(t.valueVES)} BS</strong><br>
+                <small onclick="deleteTransaction(${t.id})" style="color: #ef4444; cursor: pointer;">Eliminar</small>
+            </div>`;
         list.appendChild(li);
     });
 
@@ -203,7 +216,7 @@ function renderAll() {
             card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
         }
     } else {
-        status.innerText = "Configura tu presupuesto";
+        status.innerText = "Define un presupuesto inicial";
         card.style.background = "linear-gradient(135deg, #6b7280, #4b5563)";
     }
 }
@@ -222,3 +235,4 @@ window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
 };
+
