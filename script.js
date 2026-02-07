@@ -1,8 +1,13 @@
-// --- 1. CONFIGURACIÓN Y DIAGNÓSTICO ---
-const BASE_URL = 'https://TU-URL-DE-RENDER.onrender.com'; // ⬅️ CAMBIA ESTO
+/ --- 1. CONFIGURACIÓN ---
+// Detecta automáticamente si está en local o en Render
+const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:3000' 
+    : window.location.origin;
 
 window.onerror = async function(msg, url, linenumber) {
-    await showModal("Error Crítico", msg, "🚨");
+    console.error("Error:", msg, "en", url, ":", linenumber);
+    // Evitamos el modal en errores menores de extensiones
+    if(!msg.includes("ResizeObserver")) showModal("Error de App", msg, "🚨");
     return true;
 };
 
@@ -36,7 +41,7 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
-// --- 2. AUTENTICACIÓN (CONEXIÓN A RENDER) ---
+// --- 2. AUTENTICACIÓN ---
 function toggleAuth(isRegister) {
     const title = document.getElementById('auth-title');
     const loginBtns = document.getElementById('login-buttons');
@@ -114,7 +119,7 @@ async function login() {
             await showModal("Acceso denegado", data.error, "❌");
         }
     } catch (error) { 
-        await showModal("Servidor Dormido", "El servidor está despertando, intenta de nuevo en 20 segundos.", "⏳"); 
+        await showModal("Servidor Iniciando", "El servidor de Render está despertando. Reintenta en 20 segundos.", "⏳"); 
     }
 }
 
@@ -132,7 +137,7 @@ async function syncWithServer() {
                 transactions 
             })
         });
-    } catch (e) { console.error("Error sincronizando"); }
+    } catch (e) { console.error("Error sincronizando con el servidor"); }
 }
 
 async function addTransaction() {
@@ -146,7 +151,6 @@ async function addTransaction() {
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
-    // --- PROTECCIÓN DE SALDO NEGATIVO ---
     if (amountInVES > remainingBefore) {
         return await showModal(
             "Fondos Insuficientes", 
@@ -169,7 +173,6 @@ async function addTransaction() {
     renderAll();
 }
 
-// --- RESTO DE FUNCIONES (Render, Budget, etc.) ---
 function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
@@ -199,12 +202,15 @@ function renderAll() {
             status.innerText = `Balance en ${currentView}`;
             card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
         }
+    } else {
+        status.innerText = "Configura tu presupuesto";
+        card.style.background = "linear-gradient(135deg, #6b7280, #4b5563)";
     }
 }
 
 async function setBudget() {
-    const newBudgetVal = parseFloat(document.getElementById('total-budget').value) || 0;
-    budgetVES = newBudgetVal;
+    const val = parseFloat(document.getElementById('total-budget').value) || 0;
+    budgetVES = val;
     await syncWithServer();
     renderAll();
 }
@@ -215,10 +221,4 @@ function logout() { location.reload(); }
 window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
-};
-
-window.onload = () => {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app-container').style.display = 'none';
-
 };
