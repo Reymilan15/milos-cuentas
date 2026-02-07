@@ -137,6 +137,19 @@ async function syncWithServer() {
     } catch (e) { console.error("Error de sincronización"); }
 }
 
+// ESTA FUNCIÓN AHORA GUARDA AMBOS VALORES
+async function setBudget() {
+    const valBudget = parseFloat(document.getElementById('total-budget').value) || 0;
+    const valLimit = parseFloat(document.getElementById('spending-limit').value) || 0;
+    
+    budgetVES = valBudget;
+    spendingLimitVES = valLimit; // Aquí es donde se asigna el límite
+    
+    await syncWithServer();
+    await showModal("Configuración Guardada", "Presupuesto y límite de alerta actualizados.", "⚙️");
+    renderAll();
+}
+
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -148,12 +161,12 @@ async function addTransaction() {
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
-    // Validación 1: Presupuesto total (Bloqueo)
+    // Validación 1: Bloqueo si no hay dinero
     if (amountInVES > remainingBefore) {
         return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
     }
 
-    // Validación 2: Límite de alerta (Advertencia)
+    // Validación 2: Advertencia si pasa el límite (Confirmación interactiva)
     const totalDespues = totalSpentSoFar + amountInVES;
     if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
         const excedido = totalDespues - spendingLimitVES;
@@ -161,9 +174,9 @@ async function addTransaction() {
             "¡Límite Excedido!", 
             `Con este gasto superarás tu límite de ${fmt(spendingLimitVES)} BS por ${fmt(excedido)} BS. ¿Registrar de todos modos?`, 
             "⚠️", 
-            true
+            true // Esto permite que el modal tenga botón de Cancelar
         );
-        if (!confirmar) return;
+        if (!confirmar) return; // Si el usuario cancela, el gasto NO se agrega
     }
 
     transactions.push({ 
@@ -177,22 +190,6 @@ async function addTransaction() {
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
     await syncWithServer();
-    renderAll();
-}
-
-async function setBudget() {
-    const val = parseFloat(document.getElementById('total-budget').value) || 0;
-    budgetVES = val;
-    await syncWithServer();
-    renderAll();
-}
-
-// Nueva función para el límite
-async function setLimit() {
-    const val = parseFloat(document.getElementById('spending-limit').value) || 0;
-    spendingLimitVES = val;
-    await syncWithServer();
-    await showModal("Límite Guardado", `Se activó la alerta al pasar los ${fmt(val)} BS.`, "🔔");
     renderAll();
 }
 
@@ -260,4 +257,5 @@ window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
 };
+
 
