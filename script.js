@@ -1,4 +1,6 @@
-// --- 1. SISTEMA DE DIAGNÓSTICO DE ERRORES ---
+// --- 1. CONFIGURACIÓN Y DIAGNÓSTICO ---
+const BASE_URL = 'https://TU-URL-DE-RENDER.onrender.com'; // ⬅️ CAMBIA ESTO
+
 window.onerror = async function(msg, url, linenumber) {
     await showModal("Error Crítico", msg, "🚨");
     return true;
@@ -13,7 +15,7 @@ let rates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- FUNCIÓN DEL MODAL MÁGICO ---
+// --- FUNCIÓN DEL MODAL ---
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -34,7 +36,7 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
-// --- 2. LÓGICA DE AUTENTICACIÓN ---
+// --- 2. AUTENTICACIÓN (CONEXIÓN A RENDER) ---
 function toggleAuth(isRegister) {
     const title = document.getElementById('auth-title');
     const loginBtns = document.getElementById('login-buttons');
@@ -62,7 +64,7 @@ async function register() {
     }
 
     try {
-        const response = await fetch('/api/register', {
+        const response = await fetch(`${BASE_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, name, lastname, email, password })
@@ -74,7 +76,7 @@ async function register() {
         } else {
             await showModal("Registro fallido", data.error, "⚠️");
         }
-    } catch (error) { await showModal("Error", "No hay conexión.", "❌"); }
+    } catch (error) { await showModal("Error", "No hay conexión con el servidor.", "❌"); }
 }
 
 async function login() {
@@ -84,7 +86,7 @@ async function login() {
     if (!identifier || !password) return await showModal("Faltan datos", "Escribe tu usuario y contraseña.", "🔑");
 
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch(`${BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ identifier, password })
@@ -111,14 +113,16 @@ async function login() {
         } else {
             await showModal("Acceso denegado", data.error, "❌");
         }
-    } catch (error) { await showModal("Error", "Error de servidor.", "🚨"); }
+    } catch (error) { 
+        await showModal("Servidor Dormido", "El servidor está despertando, intenta de nuevo en 20 segundos.", "⏳"); 
+    }
 }
 
-// --- 3. LÓGICA DE LA BILLETERA ---
+// --- 3. LÓGICA DE GASTOS ---
 async function syncWithServer() {
     if (!currentUser) return;
     try {
-        await fetch('/api/save', {
+        await fetch(`${BASE_URL}/api/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -129,22 +133,6 @@ async function syncWithServer() {
             })
         });
     } catch (e) { console.error("Error sincronizando"); }
-}
-
-async function setBudget() {
-    const newBudgetVal = parseFloat(document.getElementById('total-budget').value) || 0;
-    
-    if (transactions.length > 0 && newBudgetVal > 0) {
-        const resetear = await showModal("Nuevo Presupuesto", "¿Deseas empezar de cero con este monto?", "💰", true);
-        if (resetear) { transactions = []; }
-    }
-
-    budgetVES = newBudgetVal;
-    const limitInput = document.getElementById('spending-limit');
-    spendingLimitVES = limitInput ? (parseFloat(limitInput.value) || 0) : 0;
-    
-    await syncWithServer();
-    renderAll();
 }
 
 async function addTransaction() {
@@ -167,12 +155,6 @@ async function addTransaction() {
         );
     }
 
-    // Validación de límite de gasto (opcional, pero se mantiene por tu configuración)
-    if (spendingLimitVES > 0 && (totalSpentSoFar + amountInVES) > spendingLimitVES) {
-        const continuar = await showModal("Límite superado", `Este gasto te hará pasar de tu límite de ${fmt(spendingLimitVES)} BS. ¿Continuar?`, "⚠️", true);
-        if (!continuar) return;
-    }
-
     transactions.push({ 
         id: Date.now(), 
         desc, 
@@ -187,6 +169,7 @@ async function addTransaction() {
     renderAll();
 }
 
+// --- RESTO DE FUNCIONES (Render, Budget, etc.) ---
 function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
@@ -209,41 +192,33 @@ function renderAll() {
     display.innerText = `${fmt(converted)} ${currentView}`;
     
     if (budgetVES > 0) {
-        if (remainingVES <= 0.01) { // Pequeño margen para errores de redondeo
+        if (remainingVES <= 0.01) {
             status.innerText = "🚨 SALDO AGOTADO";
             card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)"; 
-        } else if (spendingLimitVES > 0 && totalSpentVES >= spendingLimitVES) {
-            status.innerText = "⚠️ LÍMITE DE GASTOS SUPERADO";
-            card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; 
         } else {
-            let tinfo = currentView === "VES" ? "" : `(Tasa: ${fmt(rates[currentView])} BS)`;
-            status.innerText = `Balance en ${currentView} ${tinfo}`;
+            status.innerText = `Balance en ${currentView}`;
             card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
         }
-    } else {
-        status.innerText = "Define un presupuesto para iniciar";
-        card.style.background = "linear-gradient(135deg, #6b7280, #4b5563)";
     }
+}
+
+async function setBudget() {
+    const newBudgetVal = parseFloat(document.getElementById('total-budget').value) || 0;
+    budgetVES = newBudgetVal;
+    await syncWithServer();
+    renderAll();
 }
 
 function changeView(iso) { currentView = iso; renderAll(); }
 function logout() { location.reload(); }
 
-async function resetApp() {
-    const confirmar = await showModal("Borrar Todo", "¿Estás seguro de que deseas eliminar todo?", "🗑️", true);
-    if(confirmar) {
-        transactions = []; 
-        budgetVES = 0; 
-        spendingLimitVES = 0;
-        document.getElementById('total-budget').value = "";
-        const sLimit = document.getElementById('spending-limit');
-        if(sLimit) sLimit.value = "";
-        await syncWithServer(); 
-        renderAll();
-    }
-}
+window.onload = () => {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
+};
 
 window.onload = () => {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-container').style.display = 'none';
+
 };
