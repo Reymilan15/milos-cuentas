@@ -1,4 +1,4 @@
-
+// --- CONFIGURACIÓN INICIAL ---
 const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3000' 
     : window.location.origin;
@@ -20,7 +20,7 @@ let rates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- FUNCIÓN DEL MODAL ---
+// --- 1. FUNCIÓN DEL MODAL ---
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -105,11 +105,8 @@ async function login() {
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('display-user').innerText = `${data.name} ${data.lastname}`;
             
-            // Cargar valores en los inputs
             document.getElementById('total-budget').value = budgetVES > 0 ? budgetVES : "";
-            if(document.getElementById('spending-limit')) {
-                document.getElementById('spending-limit').value = spendingLimitVES > 0 ? spendingLimitVES : "";
-            }
+            document.getElementById('spending-limit').value = spendingLimitVES > 0 ? spendingLimitVES : "";
             
             renderAll();
         } else {
@@ -120,7 +117,7 @@ async function login() {
     }
 }
 
-// --- 3. LÓGICA DE GASTOS ---
+// --- 3. LÓGICA DE DATOS ---
 async function syncWithServer() {
     if (!currentUser) return;
     try {
@@ -137,17 +134,39 @@ async function syncWithServer() {
     } catch (e) { console.error("Error de sincronización"); }
 }
 
-// ESTA FUNCIÓN AHORA GUARDA AMBOS VALORES
 async function setBudget() {
     const valBudget = parseFloat(document.getElementById('total-budget').value) || 0;
     const valLimit = parseFloat(document.getElementById('spending-limit').value) || 0;
     
     budgetVES = valBudget;
-    spendingLimitVES = valLimit; // Aquí es donde se asigna el límite
+    spendingLimitVES = valLimit; 
     
     await syncWithServer();
-    await showModal("Configuración Guardada", "Presupuesto y límite de alerta actualizados.", "⚙️");
+    await showModal("Guardado", "Presupuesto y límite actualizados.", "⚙️");
     renderAll();
+}
+
+// --- LA FUNCIÓN RESETEAR ---
+async function resetApp() {
+    const confirmar = await showModal(
+        "¿Resetear Todo?", 
+        "Se borrarán todos los gastos y el presupuesto volverá a cero.", 
+        "🗑️", 
+        true
+    );
+    
+    if (confirmar) {
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        
+        document.getElementById('total-budget').value = "";
+        document.getElementById('spending-limit').value = "";
+        
+        await syncWithServer();
+        renderAll();
+        await showModal("Reiniciado", "La cuenta ha vuelto a cero.", "✅");
+    }
 }
 
 async function addTransaction() {
@@ -161,22 +180,20 @@ async function addTransaction() {
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
-    // Validación 1: Bloqueo si no hay dinero
     if (amountInVES > remainingBefore) {
         return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
     }
 
-    // Validación 2: Advertencia si pasa el límite (Confirmación interactiva)
     const totalDespues = totalSpentSoFar + amountInVES;
     if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
         const excedido = totalDespues - spendingLimitVES;
         const confirmar = await showModal(
             "¡Límite Excedido!", 
-            `Con este gasto superarás tu límite de ${fmt(spendingLimitVES)} BS por ${fmt(excedido)} BS. ¿Registrar de todos modos?`, 
+            `Superarás tu límite por ${fmt(excedido)} BS. ¿Registrar?`, 
             "⚠️", 
-            true // Esto permite que el modal tenga botón de Cancelar
+            true
         );
-        if (!confirmar) return; // Si el usuario cancela, el gasto NO se agrega
+        if (!confirmar) return;
     }
 
     transactions.push({ 
@@ -194,7 +211,7 @@ async function addTransaction() {
 }
 
 async function deleteTransaction(id) {
-    const confirmar = await showModal("Eliminar Gasto", "¿Estás seguro de borrar este registro?", "🗑️", true);
+    const confirmar = await showModal("Eliminar Gasto", "¿Estás seguro?", "🗑️", true);
     if (confirmar) {
         transactions = transactions.filter(t => t.id !== id);
         await syncWithServer();
@@ -232,7 +249,6 @@ function renderAll() {
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
-    // Cambiar colores según estado
     if (budgetVES > 0) {
         if (remainingVES <= 0.01) {
             status.innerText = "🚨 SALDO AGOTADO";
