@@ -6,14 +6,40 @@ let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
-let rates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
+// Tasas iniciales (Se actualizan solas con fetchBCVRate)
+let rates = { "USD": 45.00, "EUR": 48.50, "VES": 1 };
 
-// Usuario actual en sesión
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 let userName = "Usuario";
 let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+
+// --- NUEVA FUNCIÓN: OBTENER TASA REAL BCV ---
+async function fetchBCVRate() {
+    try {
+        // API gratuita para obtener el dólar oficial en Venezuela
+        const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+        const data = await response.json();
+        
+        if(data && data.promedio) {
+            rates.USD = parseFloat(data.promedio);
+            rates.EUR = rates.USD * 1.07; // Estimación de Euro si no viene en la data
+            console.log("Tasa BCV actualizada:", rates.USD);
+        }
+    } catch (e) {
+        console.error("No se pudo conectar con la API de tasas, usando respaldo.");
+    }
+    updateBCVUI();
+    renderAll();
+}
+
+function updateBCVUI() {
+    const rateDisplay = document.getElementById('bcv-rate-display');
+    if (rateDisplay) {
+        rateDisplay.innerHTML = `💵 BCV: <b>${fmt(rates.USD)} BS</b>`;
+    }
+}
 
 // --- FUNCIÓN GLOBAL PARA CAMBIAR ENTRE LOGIN Y REGISTRO ---
 window.toggleAuth = function(showRegister) {
@@ -33,7 +59,6 @@ window.toggleAuth = function(showRegister) {
     }
 };
 
-// Sincronizar con MongoDB
 async function syncToCloud() {
     if (!currentUser) return;
     try {
@@ -47,13 +72,10 @@ async function syncToCloud() {
                 transactions: transactions
             })
         });
-    } catch (error) {
-        console.error("Error sincronizando:", error);
-    }
+    } catch (error) { console.error("Error sincronizando:", error); }
 }
 
 // --- 2. LÓGICA DE REGISTRO Y LOGIN ---
-
 async function register() {
     const username = document.getElementById('reg-username').value;
     const name = document.getElementById('reg-name').value;
@@ -77,9 +99,7 @@ async function register() {
             const data = await response.json();
             showModal("Error", data.error, "❌");
         }
-    } catch (e) {
-        showModal("Servidor Offline", "El servidor está despertando, reintenta en segundos.", "📡");
-    }
+    } catch (e) { showModal("Servidor Offline", "Reintenta en segundos.", "📡"); }
 }
 
 async function login() {
@@ -103,19 +123,15 @@ async function login() {
             spendingLimitVES = user.spendingLimit || 0;
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
-            if(user.rates) rates = user.rates;
 
             entrarALaApp();
         } else {
             showModal("Acceso Denegado", "Credenciales incorrectas.", "🚫");
         }
-    } catch (e) {
-        showModal("Error", "Problema al conectar con el servidor.", "❌");
-    }
+    } catch (e) { showModal("Error", "Problema al conectar con el servidor.", "❌"); }
 }
 
-// --- 3. NAVEGACIÓN ENTRE SECCIONES (LA CLAVE) ---
-
+// --- 3. NAVEGACIÓN ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
@@ -125,11 +141,11 @@ function entrarALaApp() {
     document.getElementById('spending-limit').value = spendingLimitVES || "";
     
     updateUserUI();
-    showSection('inicio'); // Forzar que empiece en inicio
+    fetchBCVRate(); // Obtener tasa apenas entra
+    showSection('inicio');
 }
 
 async function showSection(section) {
-    // Cerramos el menú lateral siempre al cambiar
     document.getElementById('sidebar').classList.remove('active');
     document.getElementById('sidebar-overlay').classList.remove('active');
 
@@ -140,13 +156,11 @@ async function showSection(section) {
         secInicio.style.display = 'block';
         secStats.style.display = 'none';
         renderAll(); 
-    } 
-    else if (section === 'stats') {
+    } else if (section === 'stats') {
         secInicio.style.display = 'none';
         secStats.style.display = 'block';
-        renderAll(); // Renderizar para actualizar los números de las estadísticas
-    }
-    else if (section === 'edit') {
+        renderAll();
+    } else if (section === 'edit') {
         const newName = prompt("Nuevo Nombre:", userName);
         if (newName) {
             userName = newName;
@@ -163,7 +177,6 @@ function logout() {
 }
 
 // --- 4. GESTIÓN DE DATOS ---
-
 async function setBudget() {
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
@@ -205,22 +218,13 @@ function renderAll() {
     list.innerHTML = '';
 
     const isToday = (d) => new Date(d).toDateString() === new Date().toDateString();
-    const isThisWeek = (d) => {
-        const now = new Date();
-        const start = new Date(now.setDate(now.getDate() - now.getDay()));
-        start.setHours(0,0,0,0);
-        return new Date(d) >= start;
-    };
     const isThisMonth = (d) => new Date(d).getMonth() === new Date().getMonth();
 
-    // Procesar transacciones
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
         if (isToday(t.date)) totalHoy += t.valueVES;
-        if (isThisWeek(t.date)) totalSemana += t.valueVES;
         if (isThisMonth(t.date)) totalMes += t.valueVES;
 
-        // Solo mostrar en la lista si estamos en la vista de inicio
         const li = document.createElement('li');
         li.innerHTML = `<div><b>${t.desc}</b><br><span>${fmt(t.originalAmount)} ${t.originalCurrency}</span></div>
             <div style="text-align: right;"><strong>-${fmt(t.valueVES)} BS</strong><br>
@@ -229,14 +233,15 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
+    
+    // CORRECCIÓN DE CONVERSIÓN: Ahora usa la tasa real del BCV
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
-    // Color de la tarjeta según gasto
     if (budgetVES > 0) {
         if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
         else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-        else card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)";
+        else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     }
 
     updateStatsUI(totalHoy, totalSemana, totalMes);
@@ -245,27 +250,20 @@ function renderAll() {
 function updateStatsUI(hoy, semana, mes) {
     const statsDiv = document.getElementById('stats-panel');
     if (!statsDiv) return;
-
     statsDiv.innerHTML = `
         <div class="stats-container" style="display: grid; gap: 15px; margin-top: 20px;">
-            <div class="stat-item" style="background: #1e293b; padding: 20px; border-radius: 15px; border-left: 5px solid #6366f1;">
-                <small style="color: #94a3b8; text-transform: uppercase;">Gasto de Hoy</small>
+            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--primary);">
+                <small style="color: var(--text-muted); text-transform: uppercase;">Hoy</small>
                 <h2 style="margin: 5px 0;">${fmt(hoy)} BS</h2>
             </div>
-            <div class="stat-item" style="background: #1e293b; padding: 20px; border-radius: 15px; border-left: 5px solid #22c55e;">
-                <small style="color: #94a3b8; text-transform: uppercase;">Esta Semana</small>
-                <h2 style="margin: 5px 0;">${fmt(semana)} BS</h2>
-            </div>
-            <div class="stat-item" style="background: #1e293b; padding: 20px; border-radius: 15px; border-left: 5px solid #f59e0b;">
-                <small style="color: #94a3b8; text-transform: uppercase;">Este Mes</small>
+            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--success);">
+                <small style="color: var(--text-muted); text-transform: uppercase;">Este Mes</small>
                 <h2 style="margin: 5px 0;">${fmt(mes)} BS</h2>
             </div>
-        </div>
-    `;
+        </div>`;
 }
 
 // --- UTILIDADES ---
-
 function toggleMenu() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('sidebar-overlay').classList.toggle('active');
