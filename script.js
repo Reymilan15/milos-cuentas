@@ -1,21 +1,25 @@
 // --- 1. CONFIGURACIÓN Y PERSISTENCIA LOCAL ---
-// Cargamos datos guardados o iniciamos vacíos
 let transactions = JSON.parse(localStorage.getItem('milCuentas_data')) || [];
 let budgetVES = parseFloat(localStorage.getItem('milCuentas_budget')) || 0;
 let spendingLimitVES = parseFloat(localStorage.getItem('milCuentas_limit')) || 0;
 let currentView = 'VES';
 let rates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
+// Nuevas variables para el usuario
+let userName = localStorage.getItem('milCuentas_user_name') || "Usuario";
+let userLastName = localStorage.getItem('milCuentas_user_lastname') || "Invitado";
+
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// Función para guardar todo en el teléfono
 function saveToDevice() {
     localStorage.setItem('milCuentas_data', JSON.stringify(transactions));
     localStorage.setItem('milCuentas_budget', budgetVES);
     localStorage.setItem('milCuentas_limit', spendingLimitVES);
+    localStorage.setItem('milCuentas_user_name', userName);
+    localStorage.setItem('milCuentas_user_lastname', userLastName);
 }
 
-// --- 2. LÓGICA DE TIEMPO PARA ESTADÍSTICAS ---
+// --- 2. LÓGICA DE TIEMPO ---
 const isToday = (dateStr) => {
     const today = new Date();
     const d = new Date(dateStr);
@@ -36,7 +40,50 @@ const isThisMonth = (dateStr) => {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 };
 
-// --- 3. FUNCIONES DEL MODAL (INTERACTIVO) ---
+// --- 3. CONTROL DEL MENÚ LATERAL (NUEVO) ---
+function toggleMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+async function showSection(section) {
+    toggleMenu(); // Cerrar menú al elegir
+
+    if (section === 'inicio') {
+        // Ya estamos en el contenedor principal, si tuvieras más pantallas las ocultas aquí
+        await showModal("Inicio", "Cargando tu tablero principal...", "🏠");
+    } 
+    else if (section === 'stats') {
+        // Aquí podrías disparar un scroll hacia el panel de estadísticas o abrir un reporte
+        document.getElementById('stats-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+    else if (section === 'edit') {
+        const nuevoNombre = prompt("Edita tu nombre:", userName);
+        const nuevoApellido = prompt("Edita tu apellido:", userLastName);
+        
+        if (nuevoNombre !== null && nuevoApellido !== null) {
+            userName = nuevoNombre || userName;
+            userLastName = nuevoApellido || userLastName;
+            saveToDevice();
+            updateUserUI();
+            await showModal("Actualizado", "Tus datos han sido guardados.", "✅");
+        }
+    }
+}
+
+function updateUserUI() {
+    // Actualizar nombre en el sidebar
+    document.getElementById('side-username').innerText = userName;
+    document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
+    
+    // Actualizar nombre en la cabecera si existe el elemento
+    const displayUser = document.getElementById('display-user');
+    if (displayUser) displayUser.innerText = `${userName} ${userLastName}`;
+}
+
+// --- 4. FUNCIONES DEL MODAL ---
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -56,52 +103,39 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
-// --- 4. GESTIÓN DE PRESUPUESTO ---
+// --- 5. GESTIÓN DE PRESUPUESTO Y GASTOS ---
 async function setBudget() {
-    const valBudget = parseFloat(document.getElementById('total-budget').value) || 0;
-    const valLimit = parseFloat(document.getElementById('spending-limit').value) || 0;
-    
-    budgetVES = valBudget;
-    spendingLimitVES = valLimit;
-    
+    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
+    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
     saveToDevice();
-    await showModal("Configuración", "Presupuesto y límites guardados en este dispositivo.", "⚙️");
+    await showModal("Configuración", "Presupuesto y límites actualizados.", "⚙️");
     renderAll();
 }
 
-// --- 5. REGISTRO DE GASTOS CON ALERTAS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return await showModal("Incompleto", "Datos de compra inválidos.", "🛒");
+    if (!desc || isNaN(amount)) return await showModal("Incompleto", "Datos inválidos.", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
-    // Validación 1: Bloqueo si no hay dinero
     if (amountInVES > remainingBefore) {
-        return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
+        return await showModal("Fondos Insuficientes", `No tienes saldo suficiente.`, "🚫");
     }
 
-    // Validación 2: Advertencia si pasa el límite
     const totalDespues = totalSpentSoFar + amountInVES;
     if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
-        const excedido = totalDespues - spendingLimitVES;
-        const confirmar = await showModal(
-            "¡Límite Excedido!", 
-            `Con este gasto superarás tu límite de alerta por ${fmt(excedido)} BS. ¿Registrar?`, 
-            "⚠️", 
-            true
-        );
+        const confirmar = await showModal("¡Límite Excedido!", `Superarás tu límite de alerta. ¿Registrar?`, "⚠️", true);
         if (!confirmar) return;
     }
 
     transactions.push({ 
         id: Date.now(), 
-        date: new Date().toISOString(), // Fecha exacta del gasto
+        date: new Date().toISOString(), 
         desc, 
         originalAmount: amount, 
         originalCurrency: currency, 
@@ -127,26 +161,17 @@ function renderAll() {
     let totalMes = 0;
 
     list.innerHTML = '';
-    
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
-        
-        // Sumar a estadísticas según fecha
         if (isToday(t.date)) totalHoy += t.valueVES;
         if (isThisWeek(t.date)) totalSemana += t.valueVES;
         if (isThisMonth(t.date)) totalMes += t.valueVES;
 
         const li = document.createElement('li');
-        li.className = "transaction-item";
         li.innerHTML = `
-            <div>
-                <b>${t.desc}</b><br>
-                <span>${fmt(t.originalAmount)} ${t.originalCurrency}</span>
-            </div>
-            <div style="text-align: right;">
-                <strong>-${fmt(t.valueVES)} BS</strong><br>
-                <small onclick="deleteTransaction(${t.id})" style="color: #ef4444; cursor: pointer;">Eliminar</small>
-            </div>`;
+            <div><b>${t.desc}</b><br><span>${fmt(t.originalAmount)} ${t.originalCurrency}</span></div>
+            <div style="text-align: right;"><strong>-${fmt(t.valueVES)} BS</strong><br>
+            <small onclick="deleteTransaction(${t.id})" style="color: #ef4444; cursor: pointer;">Eliminar</small></div>`;
         list.appendChild(li);
     });
 
@@ -154,73 +179,58 @@ function renderAll() {
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
-    // Cambiar colores de tarjeta
     if (budgetVES > 0) {
-        if (remainingVES <= 0.01) {
-            status.innerText = "🚨 SALDO AGOTADO";
-            card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)"; 
-        } else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) {
-            status.innerText = "⚠️ LÍMITE EXCEDIDO";
-            card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; 
-        } else {
-            status.innerText = `Balance en ${currentView}`;
-            card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
-        }
+        if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
+        else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+        else card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)";
     }
 
     updateStatsUI(totalHoy, totalSemana, totalMes);
 }
 
-// Función para mostrar el cuadro de estadísticas
 function updateStatsUI(hoy, semana, mes) {
     let statsDiv = document.getElementById('stats-panel');
     if (!statsDiv) {
         statsDiv = document.createElement('div');
         statsDiv.id = 'stats-panel';
+        statsDiv.className = 'stats-container'; // Asegúrate de tener esta clase en CSS o usa style.cssText
         statsDiv.style.cssText = "background: #1e293b; color: white; padding: 15px; border-radius: 15px; margin-top: 20px; text-align: center;";
         document.querySelector('.balance-card').after(statsDiv);
     }
-
     statsDiv.innerHTML = `
-        <h3 style="margin:0 0 10px 0; font-size: 14px; text-transform: uppercase;">📊 Resumen de Gastos (BS)</h3>
-        <div style="display: flex; justify-content: space-around; gap: 5px;">
+        <h3 style="margin:0 0 10px 0; font-size: 12px; opacity: 0.7;">📊 RESUMEN DE GASTOS (BS)</h3>
+        <div style="display: flex; justify-content: space-around;">
             <div><small>Hoy</small><br><strong>${fmt(hoy)}</strong></div>
             <div><small>Semana</small><br><strong>${fmt(semana)}</strong></div>
             <div><small>Mes</small><br><strong>${fmt(mes)}</strong></div>
-        </div>
-    `;
+        </div>`;
 }
 
 async function deleteTransaction(id) {
-    const confirmar = await showModal("Eliminar Gasto", "¿Borrar este registro?", "🗑️", true);
-    if (confirmar) {
-        transactions = transactions.filter(t => t.id !== id);
-        saveToDevice();
-        renderAll();
-    }
+    const c = await showModal("Eliminar", "¿Borrar registro?", "🗑️", true);
+    if (c) { transactions = transactions.filter(t => t.id !== id); saveToDevice(); renderAll(); }
 }
 
 async function resetApp() {
-    const confirmar = await showModal("Resetear Todo", "¿Deseas borrar todos los datos permanentemente?", "💣", true);
-    if (confirmar) {
-        transactions = [];
-        budgetVES = 0;
-        spendingLimitVES = 0;
-        localStorage.clear();
-        location.reload();
-    }
+    const c = await showModal("Resetear", "¿Borrar todo?", "💣", true);
+    if (c) { localStorage.clear(); location.reload(); }
 }
 
 function changeView(iso) { currentView = iso; renderAll(); }
 
+function logout() {
+    location.reload(); // En una app local, recargar simula el cierre de sesión
+}
+
+// --- 7. INICIO ---
 window.onload = () => {
-    // Saltamos la pantalla de login para uso local rápido
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
+    document.getElementById('menu-btn').style.display = 'flex'; // Mostrar botón de 3 rayas
     
-    // Rellenamos inputs si hay datos guardados
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
     
+    updateUserUI();
     renderAll();
 };
