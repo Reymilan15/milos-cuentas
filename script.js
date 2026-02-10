@@ -1,9 +1,3 @@
-¡Entendido! No te preocupes, yo me encargo de unir todas las piezas. He tomado tu código y le he aplicado las correcciones de seguridad (CORS), las rutas correctas de la base de datos y la URL real que aparece en tus errores.
-
-Aquí tienes el código de tu script.js listo para copiar y usar.
-
-1. Reemplaza TODO en tu script.js con esto:
-JavaScript
 
 // --- 1. CONFIGURACIÓN Y CONEXIÓN AL SERVIDOR ---
 // He actualizado esta URL según el error de consola que me pasaste
@@ -303,6 +297,7 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
+
 
 
 
