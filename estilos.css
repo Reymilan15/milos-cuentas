@@ -1,6 +1,4 @@
-
-
-/* --- 1. VARIABLES Y RESET --- */
+/* --- 1. VARIABLES Y FUNDAMENTOS --- */
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -13,14 +11,15 @@
     --sidebar-bg: #111827;
     --text-white: #f8fafc;
     --text-muted: #94a3b8;
-    --glass: rgba(30, 41, 59, 0.7);
+    --glass: rgba(30, 41, 59, 0.75);
+    --border: rgba(255, 255, 255, 0.08);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
@@ -30,167 +29,218 @@ body {
     display: flex;
     justify-content: center;
     overflow-x: hidden;
+    line-height: 1.5;
 }
 
-/* --- 2. PANTALLA DE AUTENTICACIÓN (LOGIN/REGISTRO) --- */
+/* --- 2. PANTALLA DE AUTENTICACIÓN --- */
 .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     padding: 20px;
-    animation: fadeIn 0.5s ease;
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-box {
     background: var(--card-bg);
     padding: 40px 30px;
-    border-radius: 24px;
+    border-radius: 28px;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
     text-align: center;
 }
 
-.auth-box h2 {
-    margin-bottom: 25px;
-    font-size: 1.8rem;
-    font-weight: 700;
-    background: linear-gradient(to right, #818cf8, #c084fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.auth-box h1 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
 }
 
-/* --- 3. INPUTS Y BOTONES --- */
+.auth-box #auth-title {
+    color: var(--text-muted);
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+/* --- 3. ELEMENTOS DE FORMULARIO --- */
 input, select {
     width: 100%;
-    padding: 14px;
-    margin: 10px 0;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: #0f172a;
+    padding: 14px 18px;
+    margin: 8px 0;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.6);
     color: white;
     font-size: 1rem;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
 }
 
-input:focus {
+input:focus, select:focus {
     border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    background: rgba(15, 23, 42, 0.9);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
 }
 
+/* --- 4. BOTONES REFORZADOS --- */
 button {
     width: 100%;
     padding: 14px;
-    margin-top: 15px;
-    border-radius: 12px;
+    margin-top: 12px;
+    border-radius: 14px;
     border: none;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.2s, filter 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 
-button:active { transform: scale(0.98); }
+button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+button:active { transform: scale(0.97); }
 
 .btn-primary { background: var(--primary); color: white; }
 .btn-success { background: var(--success); color: white; }
 .btn-accent { background: var(--accent); color: white; }
+.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+.btn-logout { background: var(--danger); color: white; margin-top: auto; }
 
 .link-text {
     color: var(--accent);
     cursor: pointer;
-    font-weight: 500;
-    text-decoration: underline;
-    margin-left: 5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s;
 }
 
-/* --- 4. APP CONTAINER Y TARJETAS --- */
+.link-text:hover { opacity: 0.8; text-decoration: underline; }
+
+/* --- 5. APP CONTAINER Y TARJETA DE SALDO --- */
 .app-container {
     width: 100%;
-    max-width: 480px;
-    padding: 80px 20px 40px;
+    max-width: 500px;
+    padding: 90px 20px 40px;
 }
 
 .balance-card {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    padding: 30px;
-    border-radius: 24px;
+    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
+    padding: 35px 25px;
+    border-radius: 30px;
     text-align: center;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    margin-bottom: 30px;
+    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+    position: relative;
+    overflow: hidden;
 }
 
-.balance-card h3 { opacity: 0.8; font-weight: 400; font-size: 0.9rem; text-transform: uppercase; }
-.balance-card h1 { font-size: 2.5rem; margin: 10px 0; font-weight: 800; letter-spacing: -1px; }
+.balance-card p { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
+.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; letter-spacing: -1.5px; }
 
-/* --- 5. LISTA DE TRANSACCIONES --- */
-.transaction-list {
-    list-style: none;
+.currency-selectors {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
     margin-top: 20px;
 }
 
+.currency-selectors span, .view-options button {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: 0.2s;
+}
+
+.currency-selectors span:hover { background: white; color: var(--primary); }
+
+/* --- 6. LISTA DE TRANSACCIONES Y SECCIONES --- */
+.form-section {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 24px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+}
+
+.transaction-list { list-style: none; }
+
 .transaction-list li {
     background: var(--card-bg);
-    padding: 16px;
-    border-radius: 16px;
+    padding: 18px;
+    border-radius: 20px;
     margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    transition: 0.3s;
 }
 
-.transaction-list li b { display: block; font-size: 1.05rem; }
-.transaction-list li span { color: var(--text-muted); font-size: 0.85rem; }
+.transaction-list li:hover { transform: translateX(5px); border-color: var(--primary); }
 
-/* --- 6. SIDEBAR (MENÚ LATERAL) --- */
+/* --- 7. SIDEBAR Y MENÚ --- */
 .menu-toggle {
-    position: fixed; top: 20px; left: 20px; z-index: 1000;
-    background: var(--card-bg); padding: 12px; border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+    position: fixed; top: 20px; left: 20px; z-index: 1100;
+    background: var(--card-bg); width: 48px; height: 48px;
+    border-radius: 14px; border: 1px solid var(--border);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
 }
+
+.menu-toggle span { width: 20px; height: 2px; background: white; border-radius: 10px; }
 
 .sidebar {
-    position: fixed; left: -280px; top: 0; width: 280px; height: 100%;
-    background: var(--sidebar-bg); z-index: 2000; transition: 0.3s;
-    padding: 40px 20px; box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    position: fixed; left: -300px; top: 0; width: 280px; height: 100%;
+    background: var(--sidebar-bg); z-index: 2000; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 30px 20px; display: flex; flex-direction: column;
 }
 
 .sidebar.active { left: 0; }
 
-.sidebar-nav a {
-    display: block; padding: 15px; color: var(--text-muted);
-    text-decoration: none; border-radius: 10px; margin-bottom: 5px;
+.sidebar-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(4px); z-index: 1500; display: none;
+}
+.sidebar-overlay.active { display: block; }
+
+/* --- 8. ESTADÍSTICAS MEJORADAS --- */
+.stat-item {
+    transition: 0.3s ease;
+    border: 1px solid var(--border) !important;
 }
 
-.sidebar-nav a:hover { background: rgba(255,255,255,0.05); color: white; }
-
-/* --- 7. MODALES --- */
-.modal-wrapper {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-    display: none; justify-content: center; align-items: center;
-    z-index: 9999; backdrop-filter: blur(8px);
+.stat-item:hover {
+    background: #2d3748 !important;
+    transform: translateY(-5px);
 }
-
-.modal-content {
-    background: white; color: #1e293b; padding: 30px;
-    border-radius: 24px; width: 90%; max-width: 400px; text-align: center;
-}
-
-.modal-content h2 { color: #0f172a; margin-bottom: 10px; }
-.modal-content p { color: #64748b; margin-bottom: 20px; }
 
 /* --- ANIMACIONES --- */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.btn-save:active {
-    transform: scale(0.98);
+/* Modales */
+.modal-wrapper {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
+    display: none; justify-content: center; align-items: center;
+    z-index: 9999; backdrop-filter: blur(12px);
 }
+
+.modal-content {
+    background: var(--text-white); color: var(--bg-dark);
+    padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
+}
+
 
 
 
