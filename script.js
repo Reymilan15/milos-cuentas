@@ -1,13 +1,3 @@
-Entiendo perfectamente. Vamos a dejar el código blindado para que no tengas que tocarlo más y todo funcione a la primera, incluyendo el botón de "Regístrate aquí".
-
-He consolidado todo en este archivo. He corregido las rutas para que coincidan con tu servidor (/api/register, /api/login, /api/save) y he añadido la función toggleAuth de forma global para que el HTML la reconozca siempre.
-
-Copia y pega este código íntegro en tu script.js:
-
-JavaScript
-
-// --- 1. CONFIGURACIÓN Y CONEXIÓN AL SERVIDOR ---
-// REEMPLAZA ESTA URL con la de Render (Ej: https://milos-cuentas.onrender.com)
 const API_URL = "https://tu-app-en-render.onrender.com"; 
 
 let transactions = [];
@@ -304,5 +294,6 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
+
 
 
