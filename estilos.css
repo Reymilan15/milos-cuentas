@@ -1,250 +1,201 @@
 
-/* --- TUS VARIABLES EXISTENTES --- */
+Entiendo perfectamente. Cuando el CSS se vuelve un "collage" de parches, la interfaz empieza a verse desalineada o poco profesional. Vamos a reestructurarlo por completo para que sea un diseño limpio, moderno (estilo Glassmorphism) y que se adapte bien tanto a móvil como a escritorio.
+
+Aquí tienes el código CSS organizado por secciones para que lo reemplaces todo en tu archivo estilos.css.
+
+Reemplaza todo tu estilos.css con esto:
+CSS
+
+/* --- 1. VARIABLES Y RESET --- */
 :root {
-    --primary: #4f46e5;
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
     --success: #22c55e;
     --danger: #ef4444;
+    --warning: #f59e0b;
     --accent: #06b6d4;
     --bg-dark: #0f172a;
     --card-bg: #1e293b;
     --sidebar-bg: #111827;
-    --text-white: #ffffff;
-    --text-muted: #cbd5e1;
+    --text-white: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass: rgba(30, 41, 59, 0.7);
 }
 
-/* --- ESTILOS DE BASE (Tus estilos originales) --- */
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background-color: var(--bg-dark); 
-    color: var(--text-white); 
-    margin: 0; 
-    display: flex; 
-    justify-content: center; 
-    padding: 20px; 
-    -webkit-touch-callout: none; 
-    -webkit-user-select: none;   
-    user-select: none;
-    overscroll-behavior-y: contain;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
-/* --- MEJORA: BOTÓN HAMBURGUESA --- */
-.menu-toggle {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1100;
-    cursor: pointer;
-    background: var(--card-bg);
-    padding: 10px;
-    border-radius: 10px;
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-white);
+    min-height: 100vh;
     display: flex;
-    flex-direction: column;
-    gap: 5px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.menu-toggle span {
-    width: 25px;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: 0.3s;
-}
-
-/* --- MEJORA: MENÚ LATERAL (SIDEBAR) --- */
-.sidebar {
-    position: fixed;
-    left: -300px;
-    top: 0;
-    width: 280px;
-    height: 100%;
-    background: var(--sidebar-bg);
-    z-index: 1200;
-    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-}
-
-.sidebar.active {
-    left: 0;
-}
-
-.sidebar-header {
-    padding: 40px 20px;
-    background: #00000033;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border-bottom: 1px solid #ffffff10;
-}
-
-.user-avatar {
-    font-size: 40px;
-    background: var(--primary);
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    overflow-x: hidden;
 }
 
-.user-info span {
-    display: block;
-    font-weight: bold;
-    font-size: 18px;
+/* --- 2. PANTALLA DE AUTENTICACIÓN (LOGIN/REGISTRO) --- */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    animation: fadeIn 0.5s ease;
 }
 
-.user-info small {
-    color: var(--text-muted);
+.auth-box {
+    background: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: center;
 }
 
-.sidebar-nav {
-    padding: 20px 0;
-    flex-grow: 1;
+.auth-box h2 {
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
+
+/* --- 3. INPUTS Y BOTONES --- */
+input, select {
+    width: 100%;
+    padding: 14px;
+    margin: 10px 0;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #0f172a;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 15px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s;
+}
+
+button:active { transform: scale(0.98); }
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-accent { background: var(--accent); color: white; }
+
+.link-text {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+    margin-left: 5px;
+}
+
+/* --- 4. APP CONTAINER Y TARJETAS --- */
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    padding: 80px 20px 40px;
+}
+
+.balance-card {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    padding: 30px;
+    border-radius: 24px;
+    text-align: center;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+}
+
+.balance-card h3 { opacity: 0.8; font-weight: 400; font-size: 0.9rem; text-transform: uppercase; }
+.balance-card h1 { font-size: 2.5rem; margin: 10px 0; font-weight: 800; letter-spacing: -1px; }
+
+/* --- 5. LISTA DE TRANSACCIONES --- */
+.transaction-list {
+    list-style: none;
+    margin-top: 20px;
+}
+
+.transaction-list li {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.transaction-list li b { display: block; font-size: 1.05rem; }
+.transaction-list li span { color: var(--text-muted); font-size: 0.85rem; }
+
+/* --- 6. SIDEBAR (MENÚ LATERAL) --- */
+.menu-toggle {
+    position: fixed; top: 20px; left: 20px; z-index: 1000;
+    background: var(--card-bg); padding: 12px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+}
+
+.sidebar {
+    position: fixed; left: -280px; top: 0; width: 280px; height: 100%;
+    background: var(--sidebar-bg); z-index: 2000; transition: 0.3s;
+    padding: 40px 20px; box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+}
+
+.sidebar.active { left: 0; }
 
 .sidebar-nav a {
-    display: block;
-    padding: 15px 25px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 16px;
-    transition: 0.2s;
-    border-left: 4px solid transparent;
+    display: block; padding: 15px; color: var(--text-muted);
+    text-decoration: none; border-radius: 10px; margin-bottom: 5px;
 }
 
-.sidebar-nav a:hover {
-    background: #ffffff05;
-    color: white;
-    border-left: 4px solid var(--accent);
-}
+.sidebar-nav a:hover { background: rgba(255,255,255,0.05); color: white; }
 
-.sidebar-footer {
-    padding: 20px;
-    border-top: 1px solid #ffffff10;
-}
-
-/* --- MEJORA: OVERLAY (Capa oscura) --- */
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
-    display: none;
-    z-index: 1150;
-}
-
-.sidebar-overlay.active {
-    display: block;
-}
-
-/* --- MEJORA: PANEL DE ESTADÍSTICAS --- */
-#stats-panel {
-    background: var(--card-bg);
-    padding: 15px;
-    border-radius: 15px;
-    margin-top: 15px;
-    border: 1px solid rgba(255,255,255,0.05);
-}
-
-.stats-grid {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
-    margin-top: 10px;
-}
-
-.stats-item strong {
-    color: var(--accent);
-    font-size: 1.1rem;
-    display: block;
-}
-
-.stats-item small {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-}
-
-/* --- TUS ESTILOS EXISTENTES (Modales e Inputs) --- */
-.auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%; }
-.auth-box { background: var(--card-bg); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 100%; max-width: 350px; }
-.app-container { width: 100%; max-width: 450px; }
-
-input, select, button { 
-    width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; outline: none; box-sizing: border-box; 
-    background: #334155; color: white;
-}
-
-.btn-save { background: var(--success); color: white; font-weight: bold; cursor: pointer; }
-.btn-reset { background: var(--danger); color: white; font-weight: bold; cursor: pointer; }
-.btn-add { background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
-
-/* Mantener el Modal limpio */
+/* --- 7. MODALES --- */
 .modal-wrapper {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7); z-index: 9999; display: flex;
-    justify-content: center; align-items: center; backdrop-filter: blur(5px);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: none; justify-content: center; align-items: center;
+    z-index: 9999; backdrop-filter: blur(8px);
 }
+
 .modal-content {
-    background: white; color: black; padding: 30px; border-radius: 24px;
-    max-width: 380px; width: 90%; text-align: center;
-}
-/* --- MEJORA: ENLACES DE INTERCAMBIO (LOGIN/REGISTRO) --- */
-.auth-box p {
-    margin-top: 20px;
-    font-size: 0.9rem;
-    color: var(--text-muted);
+    background: white; color: #1e293b; padding: 30px;
+    border-radius: 24px; width: 90%; max-width: 400px; text-align: center;
 }
 
-.auth-box span {
-    color: var(--accent);
-    cursor: pointer;
-    font-weight: bold;
-    text-decoration: underline;
-    transition: all 0.3s ease;
-    padding: 5px;
-}
+.modal-content h2 { color: #0f172a; margin-bottom: 10px; }
+.modal-content p { color: #64748b; margin-bottom: 20px; }
 
-.auth-box span:hover {
-    color: var(--primary);
-    text-decoration: none;
-    filter: brightness(1.2);
-}
-
-/* --- OPTIMIZACIÓN DE FORMULARIOS --- */
-#login-buttons, #register-buttons {
-    display: flex;
-    flex-direction: column;
-    animation: fadeIn 0.4s ease-in-out;
-}
-
+/* --- ANIMACIONES --- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- ESTILO PARA EL TÍTULO DINÁMICO --- */
-#auth-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: var(--text-white);
-}
-
-/* --- BOTONES DE ACCIÓN EN REGISTRO --- */
-.btn-save {
-    background: var(--success);
-    transition: transform 0.2s, background 0.2s;
-}
-
 .btn-save:active {
     transform: scale(0.98);
 }
+
 
