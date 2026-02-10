@@ -1,10 +1,4 @@
 
-Entiendo perfectamente. Cuando el CSS se vuelve un "collage" de parches, la interfaz empieza a verse desalineada o poco profesional. Vamos a reestructurarlo por completo para que sea un diseño limpio, moderno (estilo Glassmorphism) y que se adapte bien tanto a móvil como a escritorio.
-
-Aquí tienes el código CSS organizado por secciones para que lo reemplaces todo en tu archivo estilos.css.
-
-Reemplaza todo tu estilos.css con esto:
-CSS
 
 /* --- 1. VARIABLES Y RESET --- */
 :root {
@@ -197,5 +191,6 @@ button:active { transform: scale(0.98); }
 .btn-save:active {
     transform: scale(0.98);
 }
+
 
 
