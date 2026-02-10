@@ -1,5 +1,13 @@
+Entiendo perfectamente. Vamos a dejar el código blindado para que no tengas que tocarlo más y todo funcione a la primera, incluyendo el botón de "Regístrate aquí".
+
+He consolidado todo en este archivo. He corregido las rutas para que coincidan con tu servidor (/api/register, /api/login, /api/save) y he añadido la función toggleAuth de forma global para que el HTML la reconozca siempre.
+
+Copia y pega este código íntegro en tu script.js:
+
+JavaScript
+
 // --- 1. CONFIGURACIÓN Y CONEXIÓN AL SERVIDOR ---
-// REEMPLAZA ESTA URL con la que te asigne Render al desplegar tu backend
+// REEMPLAZA ESTA URL con la de Render (Ej: https://milos-cuentas.onrender.com)
 const API_URL = "https://tu-app-en-render.onrender.com"; 
 
 let transactions = [];
@@ -15,17 +23,36 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// Función para sincronizar datos con la nube (Render)
+// --- FUNCIÓN GLOBAL PARA CAMBIAR ENTRE LOGIN Y REGISTRO ---
+// La definimos así para que el HTML la encuentre pase lo que pase
+window.toggleAuth = function(showRegister) {
+    const loginForm = document.getElementById('login-buttons');
+    const registerForm = document.getElementById('register-buttons');
+    const authTitle = document.getElementById('auth-title');
+
+    if (showRegister) {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'flex';
+        registerForm.style.flexDirection = 'column';
+        if (authTitle) authTitle.innerText = "Crear Cuenta Nueva";
+    } else {
+        loginForm.style.display = 'flex';
+        registerForm.style.display = 'none';
+        if (authTitle) authTitle.innerText = "Iniciar Sesión";
+    }
+};
+
+// Función para sincronizar datos con la nube (MongoDB via Render)
 async function syncToCloud() {
     if (!currentUser) return;
     try {
-        await fetch(`${API_URL}/save-data`, {
+        await fetch(`${API_URL}/api/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: currentUser.username,
                 budget: budgetVES,
-                limit: spendingLimitVES,
+                spendingLimit: spendingLimitVES,
                 transactions: transactions
             })
         });
@@ -34,43 +61,45 @@ async function syncToCloud() {
     }
 }
 
-// --- 2. LÓGICA DE REGISTRO Y LOGIN (MEJORADA) ---
+// --- 2. LÓGICA DE REGISTRO Y LOGIN ---
 
 async function register() {
     const username = document.getElementById('reg-username').value;
     const name = document.getElementById('reg-name').value;
     const lastname = document.getElementById('reg-lastname').value;
+    const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
 
-    if (!username || !password) return showModal("Error", "Usuario y contraseña obligatorios", "❌");
+    if (!username || !password || !email) return showModal("Error", "Usuario, Correo y Contraseña son obligatorios", "❌");
 
     try {
-        const response = await fetch(`${API_URL}/register`, {
+        const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, name, lastname, transactions: [], budget: 0, limit: 0 })
+            body: JSON.stringify({ username, password, name, lastname, email })
         });
 
         if (response.ok) {
-            showModal("Éxito", "Cuenta creada. Ahora puedes iniciar sesión.", "🎉");
-            toggleAuth(false);
+            await showModal("Éxito", "Cuenta creada. Ahora puedes iniciar sesión.", "🎉");
+            window.toggleAuth(false);
         } else {
-            showModal("Error", "El usuario ya existe o hubo un problema.", "❌");
+            const data = await response.json();
+            showModal("Error", data.error || "Hubo un problema al registrar.", "❌");
         }
     } catch (e) {
-        showModal("Servidor Offline", "No se pudo conectar con Render.", "📡");
+        showModal("Servidor Offline", "No se pudo conectar con el servidor.", "📡");
     }
 }
 
 async function login() {
-    const username = document.getElementById('username').value;
+    const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
 
     try {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch(`${API_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ identifier, password })
         });
 
         if (response.ok) {
@@ -78,12 +107,12 @@ async function login() {
             currentUser = user;
             localStorage.setItem('milCuentas_session', JSON.stringify(user));
             
-            // Cargar datos del usuario desde la nube
             transactions = user.transactions || [];
             budgetVES = user.budget || 0;
-            spendingLimitVES = user.limit || 0;
+            spendingLimitVES = user.spendingLimit || 0;
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
+            if(user.rates) rates = user.rates;
 
             entrarALaApp();
         } else {
@@ -113,12 +142,8 @@ function logout() {
     location.reload();
 }
 
-// (Tus funciones de tiempo, toggleMenu, showModal y updateUserUI se mantienen igual...)
+const isToday = (dateStr) => new Date(dateStr).toDateString() === new Date().toDateString();
 
-const isToday = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toDateString() === new Date().toDateString();
-};
 const isThisWeek = (dateStr) => {
     const now = new Date();
     const d = new Date(dateStr);
@@ -126,6 +151,7 @@ const isThisWeek = (dateStr) => {
     startOfWeek.setHours(0,0,0,0);
     return d >= startOfWeek;
 };
+
 const isThisMonth = (dateStr) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -139,20 +165,24 @@ function toggleMenu() {
 
 async function showSection(section) {
     toggleMenu();
-    if (section === 'inicio') await showModal("Inicio", "Tablero principal listo.", "🏠");
-    else if (section === 'stats') document.getElementById('stats-panel').scrollIntoView({ behavior: 'smooth' });
+    if (section === 'inicio') return;
+    else if (section === 'stats') {
+        const statsEl = document.getElementById('stats-panel');
+        if(statsEl) statsEl.scrollIntoView({ behavior: 'smooth' });
+    }
     else if (section === 'edit') {
         userName = prompt("Nombre:", userName) || userName;
         userLastName = prompt("Apellido:", userLastName) || userLastName;
         updateUserUI();
-        syncToCloud(); // Guardamos el cambio de nombre en la nube
+        syncToCloud(); 
     }
 }
 
 function updateUserUI() {
     document.getElementById('side-username').innerText = userName;
     document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
-    if (document.getElementById('display-user')) document.getElementById('display-user').innerText = `${userName} ${userLastName}`;
+    const display = document.getElementById('display-user');
+    if (display) display.innerText = `${userName} ${userLastName}`;
 }
 
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
@@ -168,14 +198,14 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
-// --- 4. GESTIÓN DE GASTOS (CONEXIÓN A NUBE) ---
+// --- 4. GESTIÓN DE GASTOS ---
 
 async function setBudget() {
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
-    await syncToCloud(); // Guardar en Render
-    await showModal("Configuración", "Presupuesto guardado en la nube.", "⚙️");
     renderAll();
+    await syncToCloud(); 
+    showModal("Éxito", "Presupuesto actualizado.", "⚙️");
 }
 
 async function addTransaction() {
@@ -183,26 +213,23 @@ async function addTransaction() {
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return await showModal("Incompleto", "Datos inválidos.", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Incompleto", "Datos inválidos.", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
-    const remainingBefore = budgetVES - totalSpentSoFar;
 
-    if (amountInVES > remainingBefore) return await showModal("Fondos Insuficientes", `No tienes saldo suficiente.`, "🚫");
+    if (amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Fondos Insuficientes", `No tienes saldo suficiente.`, "🚫");
 
-    const totalDespues = totalSpentSoFar + amountInVES;
-    if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
-        if (!(await showModal("¡Límite Excedido!", `Superarás tu alerta. ¿Registrar?`, "⚠️", true))) return;
+    if (spendingLimitVES > 0 && (totalSpentSoFar + amountInVES) > spendingLimitVES) {
+        if (!(await showModal("¡Límite!", `Superarás tu alerta. ¿Continuar?`, "⚠️", true))) return;
     }
 
     transactions.push({ id: Date.now(), date: new Date().toISOString(), desc, originalAmount: amount, originalCurrency: currency, valueVES: amountInVES });
-    
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
     
-    await syncToCloud(); // Sincronizar nuevo gasto con Render
     renderAll();
+    await syncToCloud(); 
 }
 
 function renderAll() {
@@ -244,9 +271,10 @@ function updateStatsUI(hoy, semana, mes) {
         statsDiv = document.createElement('div');
         statsDiv.id = 'stats-panel';
         statsDiv.style.cssText = "background: #1e293b; color: white; padding: 15px; border-radius: 15px; margin-top: 20px; text-align: center;";
-        document.querySelector('.balance-card').after(statsDiv);
+        const balanceCard = document.querySelector('.balance-card');
+        if(balanceCard) balanceCard.after(statsDiv);
     }
-    statsDiv.innerHTML = `<h3 style="margin:0 0 10px 0; font-size: 12px; opacity: 0.7;">📊 RESUMEN (NUBE)</h3>
+    statsDiv.innerHTML = `<h3 style="margin:0 0 10px 0; font-size: 12px; opacity: 0.7;">📊 RESUMEN (BS)</h3>
         <div style="display: flex; justify-content: space-around;">
             <div><small>Hoy</small><br><strong>${fmt(hoy)}</strong></div>
             <div><small>Semana</small><br><strong>${fmt(semana)}</strong></div>
@@ -257,29 +285,24 @@ function updateStatsUI(hoy, semana, mes) {
 async function deleteTransaction(id) {
     if (await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) {
         transactions = transactions.filter(t => t.id !== id);
-        await syncToCloud(); // Sincronizar eliminación
         renderAll();
+        await syncToCloud();
     }
 }
 
 async function resetApp() {
     if (await showModal("Resetear", "¿Borrar todo?", "💣", true)) {
         transactions = []; budgetVES = 0; spendingLimitVES = 0;
-        await syncToCloud();
         renderAll();
+        await syncToCloud();
     }
 }
 
 function changeView(iso) { currentView = iso; renderAll(); }
 
-// --- 5. INICIO DE SESIÓN ---
 window.onload = () => {
-    if (currentUser) {
-        // Si hay una sesión activa, cargar datos
-        entrarALaApp();
-    } else {
-        document.getElementById('login-screen').style.display = 'flex';
-    }
+    if (currentUser) entrarALaApp();
+    else document.getElementById('login-screen').style.display = 'flex';
 };
 
 
