@@ -6,8 +6,8 @@ let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
-// Tasas iniciales (Se actualizan solas con fetchBCVRate)
-let rates = { "USD": 45.00, "EUR": 48.50, "VES": 1 };
+// Tasa de seguridad inicial (se actualizará con fetchBCVRate)
+let rates = { "USD": 52.00, "EUR": 55.50, "VES": 1 };
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 let userName = "Usuario";
@@ -18,30 +18,41 @@ const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, 
 // --- NUEVA FUNCIÓN: OBTENER TASA REAL BCV ---
 async function fetchBCVRate() {
     try {
-        // API gratuita para obtener el dólar oficial en Venezuela
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
         const data = await response.json();
         
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
-            rates.EUR = rates.USD * 1.07; // Estimación de Euro si no viene en la data
-            console.log("Tasa BCV actualizada:", rates.USD);
+            rates.EUR = rates.USD * 1.07; // El Euro suele ser ~7% más caro
+            console.log("Tasa BCV Sincronizada:", rates.USD);
         }
     } catch (e) {
-        console.error("No se pudo conectar con la API de tasas, usando respaldo.");
+        console.error("Error conectando a la API de tasas, usando respaldo.");
     }
     updateBCVUI();
-    renderAll();
+    renderAll(); // Forzamos el recálculo inmediato de los montos
 }
 
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
         rateDisplay.innerHTML = `💵 BCV: <b>${fmt(rates.USD)} BS</b>`;
+        
+        // Hacemos que la tasa sea editable manualmente al hacer clic
+        rateDisplay.style.cursor = "pointer";
+        rateDisplay.onclick = async () => {
+            const manual = prompt("Editar tasa USD manualmente:", rates.USD);
+            if(manual && !isNaN(manual)) {
+                rates.USD = parseFloat(manual);
+                updateBCVUI();
+                renderAll();
+                showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
+            }
+        };
     }
 }
 
-// --- FUNCIÓN GLOBAL PARA CAMBIAR ENTRE LOGIN Y REGISTRO ---
+// --- AUTENTICACIÓN ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-buttons');
     const registerForm = document.getElementById('register-buttons');
@@ -75,7 +86,6 @@ async function syncToCloud() {
     } catch (error) { console.error("Error sincronizando:", error); }
 }
 
-// --- 2. LÓGICA DE REGISTRO Y LOGIN ---
 async function register() {
     const username = document.getElementById('reg-username').value;
     const name = document.getElementById('reg-name').value;
@@ -91,7 +101,6 @@ async function register() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, name, lastname, email })
         });
-
         if (response.ok) {
             await showModal("Éxito", "Cuenta creada correctamente.", "🎉");
             window.toggleAuth(false);
@@ -117,13 +126,11 @@ async function login() {
             const user = await response.json();
             currentUser = user;
             localStorage.setItem('milCuentas_session', JSON.stringify(user));
-            
             transactions = user.transactions || [];
             budgetVES = user.budget || 0;
             spendingLimitVES = user.spendingLimit || 0;
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
-
             entrarALaApp();
         } else {
             showModal("Acceso Denegado", "Credenciales incorrectas.", "🚫");
@@ -131,7 +138,7 @@ async function login() {
     } catch (e) { showModal("Error", "Problema al conectar con el servidor.", "❌"); }
 }
 
-// --- 3. NAVEGACIÓN ---
+// --- NAVEGACIÓN ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
@@ -141,7 +148,7 @@ function entrarALaApp() {
     document.getElementById('spending-limit').value = spendingLimitVES || "";
     
     updateUserUI();
-    fetchBCVRate(); // Obtener tasa apenas entra
+    fetchBCVRate(); 
     showSection('inicio');
 }
 
@@ -176,7 +183,7 @@ function logout() {
     location.reload();
 }
 
-// --- 4. GESTIÓN DE DATOS ---
+// --- GESTIÓN DE DATOS ---
 async function setBudget() {
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
@@ -195,7 +202,7 @@ async function addTransaction() {
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
 
-    if (amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Sin Fondos", `No tienes saldo suficiente.`, "🚫");
+    if (budgetVES > 0 && amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Sin Fondos", `No tienes saldo suficiente.`, "🚫");
 
     if (spendingLimitVES > 0 && (totalSpentSoFar + amountInVES) > spendingLimitVES) {
         if (!(await showModal("¡Límite!", `Superarás tu alerta de gasto. ¿Continuar?`, "⚠️", true))) return;
@@ -234,7 +241,7 @@ function renderAll() {
 
     const remainingVES = budgetVES - totalSpentVES;
     
-    // CORRECCIÓN DE CONVERSIÓN: Ahora usa la tasa real del BCV
+    // CÁLCULO PRECISO: División del remanente entre la tasa
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
@@ -311,6 +318,7 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
+
 
 
 
