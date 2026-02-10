@@ -3,23 +3,28 @@ const path = require('path');
 const fetch = require('node-fetch'); 
 const https = require('https');
 const cors = require('cors');
-const mongoose = require('mongoose'); // Agregamos Mongoose
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 10000; 
 
-// --- CONFIGURACIÓN DE MONGODB ---
-// La URL la configuraremos en Render como variable de entorno
+// --- 1. MEJORA DE SEGURIDAD EN LA CONEXIÓN ---
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("✅ Conectado a MongoDB Atlas"))
-    .catch(err => console.error("❌ Error al conectar a MongoDB:", err));
+// Si la variable no existe, el servidor avisará específicamente qué falta
+if (!MONGO_URI) {
+    console.error("❌ ERROR CRÍTICO: La variable de entorno MONGO_URI no está definida.");
+    console.log("Asegúrate de haberla configurado en la pestaña 'Environment' de Render.");
+} else {
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log("✅ Conectado a MongoDB Atlas"))
+        .catch(err => console.error("❌ Error al conectar a MongoDB:", err));
+}
 
-// Esquema de Usuario (Define qué guardamos)
+// Esquema de Usuario
 const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true, lowercase: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
+    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     name: String,
     lastname: String,
@@ -48,16 +53,22 @@ async function updateExchangeRates() {
             currentRates.EUR = data.promedio * 1.08;
             console.log(`✅ Tasas al día: ${currentRates.USD} BS`);
         }
-    } catch (e) { console.error("Error tasas"); }
+    } catch (e) { 
+        console.error("⚠️ No se pudieron obtener las tasas, usando valores por defecto."); 
+    }
 }
 updateExchangeRates();
 setInterval(updateExchangeRates, 3600000);
 
-// --- RUTAS DE LA API (Adaptadas a MongoDB) ---
+// --- RUTAS DE LA API ---
 
 app.post('/api/register', async (req, res) => {
     const { username, name, lastname, email, password } = req.body;
     try {
+        // Validar que los campos no lleguen vacíos
+        if(!username || !email || !password) {
+            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        }
         const newUser = new User({ username, name, lastname, email, password });
         await newUser.save();
         res.json({ message: "Registro exitoso" });
@@ -67,34 +78,40 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-    const { identifier, password } = req.body;
-    const cleanId = identifier?.toLowerCase().trim();
+    try {
+        const { identifier, password } = req.body;
+        if(!identifier || !password) return res.status(400).json({ error: "Datos incompletos" });
 
-    // Busca por username O por email
-    const user = await User.findOne({
-        $or: [{ username: cleanId }, { email: cleanId }]
-    });
+        const cleanId = identifier.toLowerCase().trim();
+        const user = await User.findOne({
+            $or: [{ username: cleanId }, { email: cleanId }]
+        });
 
-    if (!user || user.password !== password) {
-        return res.status(401).json({ error: "Credenciales incorrectas." });
+        if (!user || user.password !== password) {
+            return res.status(401).json({ error: "Credenciales incorrectas." });
+        }
+
+        res.json({ 
+            username: user.username,
+            name: user.name,
+            lastname: user.lastname,
+            budget: user.budget,
+            spendingLimit: user.spendingLimit,
+            transactions: user.transactions,
+            rates: currentRates 
+        });
+    } catch (e) {
+        res.status(500).json({ error: "Error en el servidor" });
     }
-
-    res.json({ 
-        username: user.username,
-        name: user.name,
-        lastname: user.lastname,
-        budget: user.budget,
-        spendingLimit: user.spendingLimit,
-        transactions: user.transactions,
-        rates: currentRates 
-    });
 });
 
 app.post('/api/save', async (req, res) => {
     const { username, budget, spendingLimit, transactions } = req.body;
     try {
+        if(!username) return res.status(400).json({ error: "Usuario no identificado" });
+        
         await User.findOneAndUpdate(
-            { username: username.toLowerCase() },
+            { username: username.toLowerCase().trim() },
             { budget, spendingLimit, transactions }
         );
         res.json({ status: "success" });
@@ -108,7 +125,8 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor con MongoDB en puerto: ${PORT}`);
+    console.log(`🚀 Servidor activo en puerto: ${PORT}`);
 });
+
 
 
