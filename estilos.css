@@ -289,6 +289,79 @@ button:active { transform: scale(0.97); }
     background: var(--text-white); color: var(--bg-dark);
     padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
 }
+.sidebar-header {
+    padding-bottom: 30px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+}
+
+.user-info span {
+    display: block;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-white);
+}
+
+.user-info small {
+    color: var(--text-muted);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.sidebar-nav a {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 14px 18px;
+    border-radius: 12px;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary);
+    transform: translateX(5px);
+}
+
+.sidebar-footer {
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* Ajuste para que las 3 rayas se vean bien en móviles */
+.menu-toggle span {
+    display: block;
+    width: 24px;
+    height: 3px;
+    background-color: white;
+    margin: 4px 0;
+    transition: 0.4s;
+    border-radius: 2px;
+}
+
 
 
 
