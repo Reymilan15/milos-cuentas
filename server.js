@@ -8,17 +8,26 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 10000; 
 
-// --- 1. MEJORA DE SEGURIDAD EN LA CONEXIÓN ---
+// --- 1. CONFIGURACIÓN DE MIDDLEWARES ---
+// Colocamos CORS al principio para que todas las rutas tengan permiso
+app.use(cors({
+    origin: '*', // Permite que cualquier sitio (como tu frontend en Render) se conecte
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
+
+app.use(express.json());
+app.use(express.static(__dirname));
+
+// --- 2. CONEXIÓN A MONGO CON MANEJO DE ERRORES ---
 const MONGO_URI = process.env.MONGO_URI;
 
-// Si la variable no existe, el servidor avisará específicamente qué falta
 if (!MONGO_URI) {
-    console.error("❌ ERROR CRÍTICO: La variable de entorno MONGO_URI no está definida.");
-    console.log("Asegúrate de haberla configurado en la pestaña 'Environment' de Render.");
+    console.error("❌ ERROR: La variable MONGO_URI no está configurada en Render.");
 } else {
     mongoose.connect(MONGO_URI)
-        .then(() => console.log("✅ Conectado a MongoDB Atlas"))
-        .catch(err => console.error("❌ Error al conectar a MongoDB:", err));
+        .then(() => console.log("✅ Conexión exitosa a MongoDB Atlas"))
+        .catch(err => console.error("❌ Error de conexión a MongoDB:", err));
 }
 
 // Esquema de Usuario
@@ -26,8 +35,8 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, lowercase: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
-    name: String,
-    lastname: String,
+    name: { type: String, default: "" },
+    lastname: { type: String, default: "" },
     budget: { type: Number, default: 0 },
     spendingLimit: { type: Number, default: 0 },
     transactions: { type: Array, default: [] }
@@ -35,15 +44,10 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// --- MIDDLEWARES ---
-app.use(cors()); 
-app.use(express.json());
-app.use(express.static(__dirname));
-
+// --- 3. TASAS DE CAMBIO ---
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 let currentRates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
-// --- ACTUALIZACIÓN DE TASAS ---
 async function updateExchangeRates() {
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', { agent: httpsAgent });
@@ -51,32 +55,43 @@ async function updateExchangeRates() {
         if (data && data.promedio) {
             currentRates.USD = data.promedio;
             currentRates.EUR = data.promedio * 1.08;
-            console.log(`✅ Tasas al día: ${currentRates.USD} BS`);
+            console.log(`✅ Tasas actualizadas: ${currentRates.USD} BS`);
         }
     } catch (e) { 
-        console.error("⚠️ No se pudieron obtener las tasas, usando valores por defecto."); 
+        console.error("⚠️ Error al obtener tasas, usando valores previos."); 
     }
 }
 updateExchangeRates();
-setInterval(updateExchangeRates, 3600000);
+setInterval(updateExchangeRates, 3600000); // Actualiza cada hora
 
-// --- RUTAS DE LA API ---
+// --- 4. RUTAS DE LA API ---
 
+// Registro de usuarios
 app.post('/api/register', async (req, res) => {
-    const { username, name, lastname, email, password } = req.body;
     try {
-        // Validar que los campos no lleguen vacíos
+        const { username, name, lastname, email, password } = req.body;
+        
         if(!username || !email || !password) {
             return res.status(400).json({ error: "Faltan campos obligatorios" });
         }
-        const newUser = new User({ username, name, lastname, email, password });
+
+        const newUser = new User({ 
+            username: username.toLowerCase().trim(), 
+            name, 
+            lastname, 
+            email: email.toLowerCase().trim(), 
+            password 
+        });
+
         await newUser.save();
         res.json({ message: "Registro exitoso" });
     } catch (error) {
-        res.status(400).json({ error: "El usuario o email ya existe." });
+        console.error("Error en registro:", error);
+        res.status(400).json({ error: "El usuario o email ya está registrado." });
     }
 });
 
+// Inicio de sesión
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -88,7 +103,7 @@ app.post('/api/login', async (req, res) => {
         });
 
         if (!user || user.password !== password) {
-            return res.status(401).json({ error: "Credenciales incorrectas." });
+            return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
         }
 
         res.json({ 
@@ -101,14 +116,15 @@ app.post('/api/login', async (req, res) => {
             rates: currentRates 
         });
     } catch (e) {
-        res.status(500).json({ error: "Error en el servidor" });
+        res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 
+// Guardar datos (Sincronización)
 app.post('/api/save', async (req, res) => {
-    const { username, budget, spendingLimit, transactions } = req.body;
     try {
-        if(!username) return res.status(400).json({ error: "Usuario no identificado" });
+        const { username, budget, spendingLimit, transactions } = req.body;
+        if(!username) return res.status(400).json({ error: "Sesión inválida" });
         
         await User.findOneAndUpdate(
             { username: username.toLowerCase().trim() },
@@ -116,16 +132,18 @@ app.post('/api/save', async (req, res) => {
         );
         res.json({ status: "success" });
     } catch (error) {
-        res.status(500).json({ error: "Error al guardar datos." });
+        res.status(500).json({ error: "No se pudieron guardar los datos." });
     }
 });
 
+// Servir el frontend para cualquier otra ruta
 app.get('*', (req, res) => { 
     res.sendFile(path.join(__dirname, 'index.html')); 
 });
 
+// Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor activo en puerto: ${PORT}`);
+    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
 
 
