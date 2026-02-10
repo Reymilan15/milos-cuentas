@@ -1,26 +1,42 @@
-// --- CONFIGURACIÓN INICIAL ---
-const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:3000' 
-    : window.location.origin;
-
-window.onerror = async function(msg, url, linenumber) {
-    if(!msg.includes("ResizeObserver")) {
-        console.error("Error:", msg, "en", url, ":", linenumber);
-        showModal("Error de App", msg, "🚨");
-    }
-    return true;
-};
-
-let currentUser = "";
-let transactions = [];
-let budgetVES = 0;
-let spendingLimitVES = 0; 
+// --- 1. CONFIGURACIÓN Y PERSISTENCIA LOCAL ---
+// Cargamos datos guardados o iniciamos vacíos
+let transactions = JSON.parse(localStorage.getItem('milCuentas_data')) || [];
+let budgetVES = parseFloat(localStorage.getItem('milCuentas_budget')) || 0;
+let spendingLimitVES = parseFloat(localStorage.getItem('milCuentas_limit')) || 0;
 let currentView = 'VES';
 let rates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. FUNCIÓN DEL MODAL ---
+// Función para guardar todo en el teléfono
+function saveToDevice() {
+    localStorage.setItem('milCuentas_data', JSON.stringify(transactions));
+    localStorage.setItem('milCuentas_budget', budgetVES);
+    localStorage.setItem('milCuentas_limit', spendingLimitVES);
+}
+
+// --- 2. LÓGICA DE TIEMPO PARA ESTADÍSTICAS ---
+const isToday = (dateStr) => {
+    const today = new Date();
+    const d = new Date(dateStr);
+    return d.toDateString() === today.toDateString();
+};
+
+const isThisWeek = (dateStr) => {
+    const now = new Date();
+    const d = new Date(dateStr);
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    startOfWeek.setHours(0,0,0,0);
+    return d >= startOfWeek;
+};
+
+const isThisMonth = (dateStr) => {
+    const now = new Date();
+    const d = new Date(dateStr);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+};
+
+// --- 3. FUNCIONES DEL MODAL (INTERACTIVO) ---
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -35,140 +51,25 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
         okBtn.style.background = (icon === "❌" || icon === "🚨" || icon === "🚫") ? "#ef4444" : "#4f46e5";
         
         modal.style.display = "flex";
-
         okBtn.onclick = () => { modal.style.display = "none"; resolve(true); };
         cancelBtn.onclick = () => { modal.style.display = "none"; resolve(false); };
     });
 }
 
-// --- 2. AUTENTICACIÓN ---
-function toggleAuth(isRegister) {
-    const title = document.getElementById('auth-title');
-    const loginBtns = document.getElementById('login-buttons');
-    const regBtns = document.getElementById('register-buttons');
-    title.innerText = isRegister ? "Crear Cuenta Nueva" : "Iniciar Sesión";
-    loginBtns.style.display = isRegister ? "none" : "block";
-    regBtns.style.display = isRegister ? "block" : "none";
-}
-
-async function register() {
-    const fields = ['reg-username', 'reg-name', 'reg-lastname', 'reg-email', 'reg-password'];
-    const values = fields.map(id => document.getElementById(id).value.trim());
-    
-    if (values.some(v => !v)) return await showModal("Campos vacíos", "Rellena todos los campos.", "📝");
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                username: values[0].toLowerCase(), 
-                name: values[1], 
-                lastname: values[2], 
-                email: values[3], 
-                password: values[4] 
-            })
-        });
-        const data = await response.json();
-        if (response.ok) {
-            await showModal("¡Éxito!", "Cuenta creada.", "✅");
-            toggleAuth(false);
-        } else {
-            await showModal("Registro fallido", data.error, "⚠️");
-        }
-    } catch (error) { await showModal("Error", "Sin conexión con el servidor.", "❌"); }
-}
-
-async function login() {
-    const identifier = document.getElementById('username').value.trim().toLowerCase();
-    const password = document.getElementById('login-password').value;
-
-    if (!identifier || !password) return await showModal("Faltan datos", "Escribe tu usuario y contraseña.", "🔑");
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            if (data.rates) rates = data.rates;
-            currentUser = data.username;
-            budgetVES = data.budget || 0;
-            spendingLimitVES = data.spendingLimit || 0; 
-            transactions = data.transactions || [];
-
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-container').style.display = 'block';
-            document.getElementById('display-user').innerText = `${data.name} ${data.lastname}`;
-            
-            document.getElementById('total-budget').value = budgetVES > 0 ? budgetVES : "";
-            document.getElementById('spending-limit').value = spendingLimitVES > 0 ? spendingLimitVES : "";
-            
-            renderAll();
-        } else {
-            await showModal("Acceso denegado", data.error, "❌");
-        }
-    } catch (error) { 
-        await showModal("Servidor Iniciando", "Despertando al servidor de Render. Reintenta en 20 segundos.", "⏳"); 
-    }
-}
-
-// --- 3. LÓGICA DE DATOS ---
-async function syncWithServer() {
-    if (!currentUser) return;
-    try {
-        await fetch(`${BASE_URL}/api/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                username: currentUser, 
-                budget: budgetVES, 
-                spendingLimit: spendingLimitVES, 
-                transactions 
-            })
-        });
-    } catch (e) { console.error("Error de sincronización"); }
-}
-
+// --- 4. GESTIÓN DE PRESUPUESTO ---
 async function setBudget() {
     const valBudget = parseFloat(document.getElementById('total-budget').value) || 0;
     const valLimit = parseFloat(document.getElementById('spending-limit').value) || 0;
     
     budgetVES = valBudget;
-    spendingLimitVES = valLimit; 
+    spendingLimitVES = valLimit;
     
-    await syncWithServer();
-    await showModal("Guardado", "Presupuesto y límite actualizados.", "⚙️");
+    saveToDevice();
+    await showModal("Configuración", "Presupuesto y límites guardados en este dispositivo.", "⚙️");
     renderAll();
 }
 
-// --- LA FUNCIÓN RESETEAR ---
-async function resetApp() {
-    const confirmar = await showModal(
-        "¿Resetear Todo?", 
-        "Se borrarán todos los gastos y el presupuesto volverá a cero.", 
-        "🗑️", 
-        true
-    );
-    
-    if (confirmar) {
-        transactions = [];
-        budgetVES = 0;
-        spendingLimitVES = 0;
-        
-        document.getElementById('total-budget').value = "";
-        document.getElementById('spending-limit').value = "";
-        
-        await syncWithServer();
-        renderAll();
-        await showModal("Reiniciado", "La cuenta ha vuelto a cero.", "✅");
-    }
-}
-
+// --- 5. REGISTRO DE GASTOS CON ALERTAS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -180,16 +81,18 @@ async function addTransaction() {
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
     const remainingBefore = budgetVES - totalSpentSoFar;
 
+    // Validación 1: Bloqueo si no hay dinero
     if (amountInVES > remainingBefore) {
         return await showModal("Fondos Insuficientes", `No puedes gastar más de lo que tienes (${fmt(remainingBefore)} BS).`, "🚫");
     }
 
+    // Validación 2: Advertencia si pasa el límite
     const totalDespues = totalSpentSoFar + amountInVES;
     if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
         const excedido = totalDespues - spendingLimitVES;
         const confirmar = await showModal(
             "¡Límite Excedido!", 
-            `Superarás tu límite por ${fmt(excedido)} BS. ¿Registrar?`, 
+            `Con este gasto superarás tu límite de alerta por ${fmt(excedido)} BS. ¿Registrar?`, 
             "⚠️", 
             true
         );
@@ -198,6 +101,7 @@ async function addTransaction() {
 
     transactions.push({ 
         id: Date.now(), 
+        date: new Date().toISOString(), // Fecha exacta del gasto
         desc, 
         originalAmount: amount, 
         originalCurrency: currency, 
@@ -206,31 +110,32 @@ async function addTransaction() {
 
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
-    await syncWithServer();
+    saveToDevice();
     renderAll();
 }
 
-async function deleteTransaction(id) {
-    const confirmar = await showModal("Eliminar Gasto", "¿Estás seguro?", "🗑️", true);
-    if (confirmar) {
-        transactions = transactions.filter(t => t.id !== id);
-        await syncWithServer();
-        renderAll();
-    }
-}
-
+// --- 6. RENDERIZADO Y ESTADÍSTICAS ---
 function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
     const status = document.getElementById('budget-status');
     const card = document.getElementById('balance-card');
-    if (!list) return;
+
+    let totalSpentVES = 0;
+    let totalHoy = 0;
+    let totalSemana = 0;
+    let totalMes = 0;
 
     list.innerHTML = '';
-    let totalSpentVES = 0;
     
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
+        
+        // Sumar a estadísticas según fecha
+        if (isToday(t.date)) totalHoy += t.valueVES;
+        if (isThisWeek(t.date)) totalSemana += t.valueVES;
+        if (isThisMonth(t.date)) totalMes += t.valueVES;
+
         const li = document.createElement('li');
         li.className = "transaction-item";
         li.innerHTML = `
@@ -249,6 +154,7 @@ function renderAll() {
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
+    // Cambiar colores de tarjeta
     if (budgetVES > 0) {
         if (remainingVES <= 0.01) {
             status.innerText = "🚨 SALDO AGOTADO";
@@ -260,19 +166,61 @@ function renderAll() {
             status.innerText = `Balance en ${currentView}`;
             card.style.background = "linear-gradient(135deg, #4f46e5, #3730a3)"; 
         }
-    } else {
-        status.innerText = "Define un presupuesto inicial";
-        card.style.background = "linear-gradient(135deg, #6b7280, #4b5563)";
+    }
+
+    updateStatsUI(totalHoy, totalSemana, totalMes);
+}
+
+// Función para mostrar el cuadro de estadísticas
+function updateStatsUI(hoy, semana, mes) {
+    let statsDiv = document.getElementById('stats-panel');
+    if (!statsDiv) {
+        statsDiv = document.createElement('div');
+        statsDiv.id = 'stats-panel';
+        statsDiv.style.cssText = "background: #1e293b; color: white; padding: 15px; border-radius: 15px; margin-top: 20px; text-align: center;";
+        document.querySelector('.balance-card').after(statsDiv);
+    }
+
+    statsDiv.innerHTML = `
+        <h3 style="margin:0 0 10px 0; font-size: 14px; text-transform: uppercase;">📊 Resumen de Gastos (BS)</h3>
+        <div style="display: flex; justify-content: space-around; gap: 5px;">
+            <div><small>Hoy</small><br><strong>${fmt(hoy)}</strong></div>
+            <div><small>Semana</small><br><strong>${fmt(semana)}</strong></div>
+            <div><small>Mes</small><br><strong>${fmt(mes)}</strong></div>
+        </div>
+    `;
+}
+
+async function deleteTransaction(id) {
+    const confirmar = await showModal("Eliminar Gasto", "¿Borrar este registro?", "🗑️", true);
+    if (confirmar) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveToDevice();
+        renderAll();
+    }
+}
+
+async function resetApp() {
+    const confirmar = await showModal("Resetear Todo", "¿Deseas borrar todos los datos permanentemente?", "💣", true);
+    if (confirmar) {
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        localStorage.clear();
+        location.reload();
     }
 }
 
 function changeView(iso) { currentView = iso; renderAll(); }
-function logout() { location.reload(); }
 
 window.onload = () => {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app-container').style.display = 'none';
+    // Saltamos la pantalla de login para uso local rápido
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    
+    // Rellenamos inputs si hay datos guardados
+    document.getElementById('total-budget').value = budgetVES || "";
+    document.getElementById('spending-limit').value = spendingLimitVES || "";
+    
+    renderAll();
 };
-
-
-
