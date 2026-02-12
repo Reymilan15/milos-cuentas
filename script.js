@@ -4,6 +4,7 @@ let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
+// Tasas iniciales de respaldo
 let rates = { "USD": 52.00, "EUR": 55.50, "VES": 1 };
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
@@ -12,15 +13,16 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASA BCV (ACTUALIZADO: USD Y EUR) ---
+// --- 1. TASA BCV ACTUALIZADA (Sincronización Real) ---
 async function fetchBCVRate() {
     try {
-        // Obtenemos USD
-        const resUSD = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+        // Consultamos ambas tasas al mismo tiempo para evitar retrasos
+        const [resUSD, resEUR] = await Promise.all([
+            fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+            fetch('https://ve.dolarapi.com/v1/monedas/eur')
+        ]);
+
         const dataUSD = await resUSD.json();
-        
-        // Obtenemos EUR
-        const resEUR = await fetch('https://ve.dolarapi.com/v1/monedas/eur');
         const dataEUR = await resEUR.json();
         
         if(dataUSD && dataUSD.promedio) {
@@ -29,19 +31,18 @@ async function fetchBCVRate() {
         
         if(dataEUR && dataEUR.promedio) {
             rates.EUR = parseFloat(dataEUR.promedio);
-            console.log("Tasas BCV Sincronizadas - USD:", rates.USD, "EUR:", rates.EUR);
+            console.log("Tasas Sincronizadas -> USD:", rates.USD, "EUR:", rates.EUR);
         }
     } catch (e) {
         console.error("Error conectando a la API de tasas, usando respaldo.");
     }
     updateBCVUI();
-    renderAll();
+    renderAll(); // Forzamos el recalculo de todo con las nuevas tasas
 }
 
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
-        // Mostramos ambas tasas con iconos claros
         rateDisplay.innerHTML = `
             <span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span>
             <span>💶 € <b>${fmt(rates.EUR)}</b></span>
@@ -49,21 +50,19 @@ function updateBCVUI() {
         
         rateDisplay.style.cursor = "pointer";
         rateDisplay.onclick = async () => {
-            const opcion = prompt("¿Qué tasa deseas editar manualmente?\n1: Dólar (USD)\n2: Euro (EUR)");
+            const opcion = prompt("¿Qué tasa deseas editar?\n1: Dólar (USD)\n2: Euro (EUR)");
             
             if(opcion === "1") {
-                const manual = prompt("Nuevo valor Dólar (USD):", rates.USD);
+                const manual = prompt("Nuevo valor USD:", rates.USD);
                 if(manual && !isNaN(manual)) rates.USD = parseFloat(manual);
             } else if(opcion === "2") {
-                const manual = prompt("Nuevo valor Euro (EUR):", rates.EUR);
+                const manual = prompt("Nuevo valor EUR:", rates.EUR);
                 if(manual && !isNaN(manual)) rates.EUR = parseFloat(manual);
-            } else {
-                return; // Si cancela o pone otra cosa, no hacemos nada
-            }
+            } else { return; }
             
             updateBCVUI();
             renderAll();
-            showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
+            showModal("Tasa Actualizada", "Cálculos actualizados con la nueva tasa.", "✅");
         };
     }
 }
@@ -265,6 +264,7 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
+    // AQUÍ ESTÁ EL TRUCO: Dividimos los BS restantes entre la tasa del Euro o Dólar
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
