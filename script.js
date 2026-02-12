@@ -4,8 +4,6 @@ let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
-
-// Cambiamos los valores iniciales a 1 para notar de inmediato si la API no ha cargado
 let rates = { "USD": 1, "EUR": 1, "VES": 1 };
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
@@ -14,34 +12,24 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASA BCV REAL (CORREGIDA) ---
+// --- 1. TASA BCV (Sincronización Real) ---
 async function fetchBCVRate() {
     try {
-        // Usamos pyDolarVE que es mucho más estable para tasas oficiales de Venezuela
         const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
         const data = await response.json();
-        
         if(data && data.monedas) {
-            // Extraemos los valores exactos del BCV
             rates.USD = parseFloat(data.monedas.usd.valor);
             rates.EUR = parseFloat(data.monedas.eur.valor);
-            console.log("✅ Tasas BCV Oficiales:", rates.USD, rates.EUR);
-        } else {
-            throw new Error("Formato de API inesperado");
         }
     } catch (e) {
-        console.error("Error con fuente principal, intentando alternativa...");
         try {
-            // Intento secundario si la primera falla
             const resAlt = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
             const dataAlt = await resAlt.json();
             if(dataAlt.promedio) {
                 rates.USD = dataAlt.promedio;
-                rates.EUR = rates.USD * 1.08; // Estimado si falla la de Euro
+                rates.EUR = rates.USD * 1.08;
             }
-        } catch (err) {
-            showModal("Error de Conexión", "No pudimos obtener la tasa del BCV automáticamente. Por favor, ajústala manualmente.", "📡");
-        }
+        } catch (err) { console.error("Error en tasas."); }
     }
     updateBCVUI();
     renderAll();
@@ -54,47 +42,39 @@ function updateBCVUI() {
             <span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span>
             <span>💶 € <b>${fmt(rates.EUR)}</b></span>
         `;
-        
-        rateDisplay.style.cursor = "pointer";
         rateDisplay.onclick = async () => {
-            const opcion = prompt("¿Qué tasa deseas editar manualmente?\n1: Dólar (USD)\n2: Euro (EUR)");
-            
+            const opcion = prompt("¿Qué tasa editar?\n1: USD\n2: EUR");
             if(opcion === "1") {
-                const manual = prompt("Nuevo valor Dólar (USD):", rates.USD);
-                if(manual && !isNaN(manual)) rates.USD = parseFloat(manual);
+                const m = prompt("Nuevo USD:", rates.USD);
+                if(m && !isNaN(m)) rates.USD = parseFloat(m);
             } else if(opcion === "2") {
-                const manual = prompt("Nuevo valor Euro (EUR):", rates.EUR);
-                if(manual && !isNaN(manual)) rates.EUR = parseFloat(manual);
-            } else { return; }
-            
-            updateBCVUI();
-            renderAll();
-            showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
+                const m = prompt("Nuevo EUR:", rates.EUR);
+                if(m && !isNaN(m)) rates.EUR = parseFloat(m);
+            }
+            updateBCVUI(); renderAll();
         };
     }
 }
 
-// --- 2. AUTENTICACIÓN ---
+// --- 2. AUTENTICACIÓN (CORREGIDA PARA NO ENCIMARSE) ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-buttons');
     const registerForm = document.getElementById('register-buttons');
     const authTitle = document.getElementById('auth-title');
 
+    // Ocultamos ambos para limpiar el espacio
     loginForm.style.display = 'none';
     registerForm.style.display = 'none';
 
-    const applyStyles = (el) => {
-        el.style.display = 'flex';
-        el.style.flexDirection = 'column';
-        el.style.gap = '15px';
-        el.style.width = '100%';
-    };
-
     if (showRegister) {
-        applyStyles(registerForm);
+        registerForm.style.display = 'flex';
+        registerForm.style.flexDirection = 'column';
+        registerForm.style.gap = '15px';
         if (authTitle) authTitle.innerText = "Crear Cuenta Nueva";
     } else {
-        applyStyles(loginForm);
+        loginForm.style.display = 'flex';
+        loginForm.style.flexDirection = 'column';
+        loginForm.style.gap = '15px';
         if (authTitle) authTitle.innerText = "Iniciar Sesión";
     }
 };
@@ -122,7 +102,7 @@ async function register() {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
 
-    if (!username || !password || !email) return showModal("Error", "Campos obligatorios incompletos", "❌");
+    if (!username || !password || !email) return showModal("Error", "Campos incompletos", "❌");
 
     try {
         const response = await fetch(`${API_URL}/api/register`, {
@@ -131,13 +111,13 @@ async function register() {
             body: JSON.stringify({ username, password, name, lastname, email })
         });
         if (response.ok) {
-            await showModal("Éxito", "Cuenta creada correctamente.", "🎉");
+            await showModal("Éxito", "Cuenta creada.", "🎉");
             window.toggleAuth(false);
         } else {
             const data = await response.json();
             showModal("Error", data.error, "❌");
         }
-    } catch (e) { showModal("Servidor Offline", "Reintenta.", "📡"); }
+    } catch (e) { showModal("Error", "Reintenta.", "📡"); }
 }
 
 async function login() {
@@ -162,16 +142,15 @@ async function login() {
             userLastName = user.lastname || "";
             entrarALaApp();
         } else {
-            showModal("Acceso Denegado", "Credenciales incorrectas.", "🚫");
+            showModal("Error", "Acceso denegado.", "🚫");
         }
     } catch (e) { showModal("Error", "Problema de conexión.", "❌"); }
 }
 
-// --- 3. NAVEGACIÓN ---
+// --- 3. NAVEGACIÓN Y CIERRE (OCULTA EL MENÚ AL SALIR) ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    
     const headerUI = document.getElementById('app-header-ui');
     if(headerUI) headerUI.style.display = 'flex';
     
@@ -183,10 +162,18 @@ function entrarALaApp() {
     showSection('inicio');
 }
 
+function logout() {
+    localStorage.removeItem('milCuentas_session');
+    // Ocultamos todo antes de recargar para evitar flashes visuales
+    document.getElementById('app-container').style.display = 'none';
+    const headerUI = document.getElementById('app-header-ui');
+    if(headerUI) headerUI.style.display = 'none';
+    location.reload();
+}
+
 async function showSection(section) {
     document.getElementById('sidebar').classList.remove('active');
     document.getElementById('sidebar-overlay').classList.remove('active');
-
     const secInicio = document.getElementById('section-inicio');
     const secStats = document.getElementById('section-stats');
 
@@ -203,15 +190,9 @@ async function showSection(section) {
         if (newName) {
             userName = newName;
             userLastName = prompt("Nuevo Apellido:", userLastName) || userLastName;
-            updateUserUI();
-            syncToCloud(); 
+            updateUserUI(); syncToCloud(); 
         }
     }
-}
-
-function logout() {
-    localStorage.removeItem('milCuentas_session');
-    location.reload();
 }
 
 // --- 4. GESTIÓN DE DATOS ---
@@ -228,21 +209,16 @@ async function addTransaction() {
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return showModal("Incompleto", "Ingresa descripción y monto.", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Incompleto", "Datos inválidos.", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
 
-    if (budgetVES > 0 && amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Sin Fondos", `No tienes saldo suficiente.`, "🚫");
-
-    if (spendingLimitVES > 0 && (totalSpentSoFar + amountInVES) > spendingLimitVES) {
-        if (!(await showModal("¡Límite!", `Superarás tu alerta de gasto. ¿Continuar?`, "⚠️", true))) return;
-    }
+    if (budgetVES > 0 && amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Sin Fondos", "Saldo insuficiente.", "🚫");
 
     transactions.push({ id: Date.now(), date: new Date().toISOString(), desc, originalAmount: amount, originalCurrency: currency, valueVES: amountInVES });
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
-    
     renderAll();
     await syncToCloud(); 
 }
@@ -251,6 +227,7 @@ function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
+    if(!list || !display) return;
 
     let totalSpentVES = 0, totalHoy = 0, totalMes = 0;
     list.innerHTML = '';
@@ -274,9 +251,8 @@ function renderAll() {
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
-    if (budgetVES > 0) {
+    if (budgetVES > 0 && card) {
         if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
-        else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
         else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     }
     updateStatsUI(totalHoy, totalMes);
@@ -288,11 +264,11 @@ function updateStatsUI(hoy, mes) {
     statsDiv.innerHTML = `
         <div class="stats-container" style="display: grid; gap: 15px; margin-top: 20px;">
             <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--primary);">
-                <small style="color: var(--text-muted); text-transform: uppercase;">Hoy</small>
+                <small style="color: var(--text-muted);">Hoy</small>
                 <h2 style="margin: 5px 0;">${fmt(hoy)} BS</h2>
             </div>
-            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--success);">
-                <small style="color: var(--text-muted); text-transform: uppercase;">Este Mes</small>
+            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid #22c55e;">
+                <small style="color: var(--text-muted);">Este Mes</small>
                 <h2 style="margin: 5px 0;">${fmt(mes)} BS</h2>
             </div>
         </div>`;
@@ -304,25 +280,16 @@ function toggleMenu() {
 }
 
 function updateUserUI() {
-    document.getElementById('side-username').innerText = userName;
-    document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
-    const display = document.getElementById('display-user');
-    if (display) display.innerText = `Hola, ${userName} 👋`;
+    const sideU = document.getElementById('side-username');
+    const sideF = document.getElementById('side-fullname');
+    if(sideU) sideU.innerText = userName;
+    if(sideF) sideF.innerText = `${userName} ${userLastName}`;
 }
 
 async function deleteTransaction(id) {
-    if (await showModal("Eliminar", "¿Borrar este registro?", "🗑️", true)) {
+    if (await showModal("Eliminar", "¿Borrar?", "🗑️", true)) {
         transactions = transactions.filter(t => t.id !== id);
-        renderAll();
-        await syncToCloud();
-    }
-}
-
-async function resetApp() {
-    if (await showModal("Resetear", "¿Borrar todos los datos?", "💣", true)) {
-        transactions = []; budgetVES = 0; spendingLimitVES = 0;
-        renderAll();
-        await syncToCloud();
+        renderAll(); await syncToCloud();
     }
 }
 
@@ -331,6 +298,7 @@ function changeView(iso) { currentView = iso; renderAll(); }
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
+        if(!modal) return resolve(true);
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = message;
         document.getElementById('modal-icon').innerText = icon;
@@ -341,9 +309,23 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
+// --- AL CARGAR LA PÁGINA (ESTADO INICIAL LIMPIO) ---
 window.onload = () => {
-    if (currentUser) entrarALaApp();
-    else document.getElementById('login-screen').style.display = 'flex';
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
+    const headerUI = document.getElementById('app-header-ui');
+
+    if (currentUser) {
+        entrarALaApp();
+    } else {
+        // Aseguramos que todo lo de la App esté oculto al inicio
+        if(appContainer) appContainer.style.display = 'none';
+        if(headerUI) headerUI.style.display = 'none';
+        if(loginScreen) {
+            loginScreen.style.display = 'flex';
+            window.toggleAuth(false); // Por defecto muestra solo el Login
+        }
+    }
 };
 
 
