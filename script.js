@@ -4,8 +4,9 @@ let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
-// Tasas iniciales de respaldo
-let rates = { "USD": 52.00, "EUR": 55.50, "VES": 1 };
+
+// Cambiamos los valores iniciales a 1 para notar de inmediato si la API no ha cargado
+let rates = { "USD": 1, "EUR": 1, "VES": 1 };
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 let userName = "Usuario";
@@ -13,31 +14,37 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASA BCV ACTUALIZADA (Sincronización Real) ---
+// --- 1. TASA BCV REAL (CORREGIDA) ---
 async function fetchBCVRate() {
     try {
-        // Consultamos ambas tasas al mismo tiempo para evitar retrasos
-        const [resUSD, resEUR] = await Promise.all([
-            fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
-            fetch('https://ve.dolarapi.com/v1/monedas/eur')
-        ]);
-
-        const dataUSD = await resUSD.json();
-        const dataEUR = await resEUR.json();
+        // Usamos pyDolarVE que es mucho más estable para tasas oficiales de Venezuela
+        const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
+        const data = await response.json();
         
-        if(dataUSD && dataUSD.promedio) {
-            rates.USD = parseFloat(dataUSD.promedio);
-        }
-        
-        if(dataEUR && dataEUR.promedio) {
-            rates.EUR = parseFloat(dataEUR.promedio);
-            console.log("Tasas Sincronizadas -> USD:", rates.USD, "EUR:", rates.EUR);
+        if(data && data.monedas) {
+            // Extraemos los valores exactos del BCV
+            rates.USD = parseFloat(data.monedas.usd.valor);
+            rates.EUR = parseFloat(data.monedas.eur.valor);
+            console.log("✅ Tasas BCV Oficiales:", rates.USD, rates.EUR);
+        } else {
+            throw new Error("Formato de API inesperado");
         }
     } catch (e) {
-        console.error("Error conectando a la API de tasas, usando respaldo.");
+        console.error("Error con fuente principal, intentando alternativa...");
+        try {
+            // Intento secundario si la primera falla
+            const resAlt = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+            const dataAlt = await resAlt.json();
+            if(dataAlt.promedio) {
+                rates.USD = dataAlt.promedio;
+                rates.EUR = rates.USD * 1.08; // Estimado si falla la de Euro
+            }
+        } catch (err) {
+            showModal("Error de Conexión", "No pudimos obtener la tasa del BCV automáticamente. Por favor, ajústala manualmente.", "📡");
+        }
     }
     updateBCVUI();
-    renderAll(); // Forzamos el recalculo de todo con las nuevas tasas
+    renderAll();
 }
 
 function updateBCVUI() {
@@ -50,19 +57,19 @@ function updateBCVUI() {
         
         rateDisplay.style.cursor = "pointer";
         rateDisplay.onclick = async () => {
-            const opcion = prompt("¿Qué tasa deseas editar?\n1: Dólar (USD)\n2: Euro (EUR)");
+            const opcion = prompt("¿Qué tasa deseas editar manualmente?\n1: Dólar (USD)\n2: Euro (EUR)");
             
             if(opcion === "1") {
-                const manual = prompt("Nuevo valor USD:", rates.USD);
+                const manual = prompt("Nuevo valor Dólar (USD):", rates.USD);
                 if(manual && !isNaN(manual)) rates.USD = parseFloat(manual);
             } else if(opcion === "2") {
-                const manual = prompt("Nuevo valor EUR:", rates.EUR);
+                const manual = prompt("Nuevo valor Euro (EUR):", rates.EUR);
                 if(manual && !isNaN(manual)) rates.EUR = parseFloat(manual);
             } else { return; }
             
             updateBCVUI();
             renderAll();
-            showModal("Tasa Actualizada", "Cálculos actualizados con la nueva tasa.", "✅");
+            showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
         };
     }
 }
@@ -264,7 +271,6 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
-    // AQUÍ ESTÁ EL TRUCO: Dividimos los BS restantes entre la tasa del Euro o Dólar
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
@@ -339,7 +345,6 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
-
 
 
 
