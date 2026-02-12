@@ -11,15 +11,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mil Cuentas">
     
-    <link rel="manifest" href="/milos-cuentas/manifest.json">
+    <link rel="icon" type="image/png" href="logo.png"> <link rel="manifest" href="/milos-cuentas/manifest.json">
     <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
-    <div id="menu-btn" class="menu-toggle" onclick="toggleMenu()" style="display: none;">
-        <span></span>
-        <span></span>
-        <span></span>
+    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; background: var(--bg-color); padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="menu-btn" class="menu-toggle" onclick="toggleMenu()">
+                <span></span><span></span><span></span>
+            </div>
+            <img src="logo.png" alt="Logo" style="height: 30px; width: auto;">
+        </div>
+        <div id="bcv-rate-display" class="bcv-badge">Cargando tasa...</div>
     </div>
 
     <div id="sidebar" class="sidebar">
@@ -46,6 +50,7 @@
 
     <div id="login-screen" class="auth-container">
         <div class="auth-box">
+            <img src="logo.png" alt="Mil Cuentas Logo" style="width: 80px; margin-bottom: 10px;">
             <h1>Mil Cuentas</h1>
             <p id="auth-title">Iniciar Sesión</p>
             
@@ -68,14 +73,14 @@
         </div>
     </div>
 
-    <div id="app-container" class="app-container" style="display: none;">
+    <div id="app-container" class="app-container" style="display: none; padding-top: 60px;">
         
         <div id="section-inicio">
             <header>
                 <div class="user-header">
                     <span id="display-user"></span>
                 </div>
-                <h1>Mil Cuentas</h1>
+                <h1 style="font-size: 1.5rem;">Resumen de Cuenta</h1>
                 
                 <div class="budget-setup">
                     <input type="number" id="total-budget" placeholder="Presupuesto Total (BS)">
