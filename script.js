@@ -1,12 +1,9 @@
-
-// --- 1. CONFIGURACIÓN Y CONEXIÓN AL SERVIDOR ---
 const API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES';
-// Tasa de seguridad inicial (se actualizará con fetchBCVRate)
 let rates = { "USD": 52.00, "EUR": 55.50, "VES": 1 };
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
@@ -15,30 +12,27 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- NUEVA FUNCIÓN: OBTENER TASA REAL BCV ---
+// --- TASA BCV ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
         const data = await response.json();
-        
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
-            rates.EUR = rates.USD * 1.07; // El Euro suele ser ~7% más caro
+            rates.EUR = rates.USD * 1.07;
             console.log("Tasa BCV Sincronizada:", rates.USD);
         }
     } catch (e) {
-        console.error("Error conectando a la API de tasas, usando respaldo.");
+        console.error("Error conectando a la API de tasas.");
     }
     updateBCVUI();
-    renderAll(); // Forzamos el recálculo inmediato de los montos
+    renderAll();
 }
 
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
         rateDisplay.innerHTML = `💵 BCV: <b>${fmt(rates.USD)} BS</b>`;
-        
-        // Hacemos que la tasa sea editable manualmente al hacer clic
         rateDisplay.style.cursor = "pointer";
         rateDisplay.onclick = async () => {
             const manual = prompt("Editar tasa USD manualmente:", rates.USD);
@@ -52,20 +46,29 @@ function updateBCVUI() {
     }
 }
 
-// --- AUTENTICACIÓN ---
+// --- 2. AUTENTICACIÓN (CORREGIDA PARA EVITAR ERRORES VISUALES) ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-buttons');
     const registerForm = document.getElementById('register-buttons');
     const authTitle = document.getElementById('auth-title');
 
+    // Resetear visibilidad
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'none';
+
+    // Aplicar estilos consistentes para que no se vea distinto al volver
+    const applyStyles = (el) => {
+        el.style.display = 'flex';
+        el.style.flexDirection = 'column';
+        el.style.gap = '15px'; // Espaciado igual para ambos
+        el.style.width = '100%';
+    };
+
     if (showRegister) {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'flex';
-        registerForm.style.flexDirection = 'column';
+        applyStyles(registerForm);
         if (authTitle) authTitle.innerText = "Crear Cuenta Nueva";
     } else {
-        loginForm.style.display = 'flex';
-        registerForm.style.display = 'none';
+        applyStyles(loginForm);
         if (authTitle) authTitle.innerText = "Iniciar Sesión";
     }
 };
@@ -108,7 +111,7 @@ async function register() {
             const data = await response.json();
             showModal("Error", data.error, "❌");
         }
-    } catch (e) { showModal("Servidor Offline", "Reintenta en segundos.", "📡"); }
+    } catch (e) { showModal("Servidor Offline", "Reintenta.", "📡"); }
 }
 
 async function login() {
@@ -135,14 +138,17 @@ async function login() {
         } else {
             showModal("Acceso Denegado", "Credenciales incorrectas.", "🚫");
         }
-    } catch (e) { showModal("Error", "Problema al conectar con el servidor.", "❌"); }
+    } catch (e) { showModal("Error", "Problema de conexión.", "❌"); }
 }
 
-// --- NAVEGACIÓN ---
+// --- 3. NAVEGACIÓN ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    document.getElementById('menu-btn').style.display = 'flex';
+    
+    // Mostramos la barra de header con logo y menú
+    const headerUI = document.getElementById('app-header-ui');
+    if(headerUI) headerUI.style.display = 'flex';
     
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
@@ -183,7 +189,7 @@ function logout() {
     location.reload();
 }
 
-// --- GESTIÓN DE DATOS ---
+// --- 4. GESTIÓN DE DATOS ---
 async function setBudget() {
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
@@ -221,7 +227,7 @@ function renderAll() {
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
 
-    let totalSpentVES = 0, totalHoy = 0, totalSemana = 0, totalMes = 0;
+    let totalSpentVES = 0, totalHoy = 0, totalMes = 0;
     list.innerHTML = '';
 
     const isToday = (d) => new Date(d).toDateString() === new Date().toDateString();
@@ -240,8 +246,6 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
-    
-    // CÁLCULO PRECISO: División del remanente entre la tasa
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
@@ -250,11 +254,10 @@ function renderAll() {
         else if (spendingLimitVES > 0 && totalSpentVES > spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
         else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     }
-
-    updateStatsUI(totalHoy, totalSemana, totalMes);
+    updateStatsUI(totalHoy, totalMes);
 }
 
-function updateStatsUI(hoy, semana, mes) {
+function updateStatsUI(hoy, mes) {
     const statsDiv = document.getElementById('stats-panel');
     if (!statsDiv) return;
     statsDiv.innerHTML = `
@@ -270,7 +273,6 @@ function updateStatsUI(hoy, semana, mes) {
         </div>`;
 }
 
-// --- UTILIDADES ---
 function toggleMenu() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('sidebar-overlay').classList.toggle('active');
@@ -318,6 +320,7 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
+
 
 
 
