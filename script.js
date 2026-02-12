@@ -12,18 +12,27 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- TASA BCV ---
+// --- 1. TASA BCV (ACTUALIZADO: USD Y EUR) ---
 async function fetchBCVRate() {
     try {
-        const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-        const data = await response.json();
-        if(data && data.promedio) {
-            rates.USD = parseFloat(data.promedio);
-            rates.EUR = rates.USD * 1.07;
-            console.log("Tasa BCV Sincronizada:", rates.USD);
+        // Obtenemos USD
+        const resUSD = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+        const dataUSD = await resUSD.json();
+        
+        // Obtenemos EUR
+        const resEUR = await fetch('https://ve.dolarapi.com/v1/monedas/eur');
+        const dataEUR = await resEUR.json();
+        
+        if(dataUSD && dataUSD.promedio) {
+            rates.USD = parseFloat(dataUSD.promedio);
+        }
+        
+        if(dataEUR && dataEUR.promedio) {
+            rates.EUR = parseFloat(dataEUR.promedio);
+            console.log("Tasas BCV Sincronizadas - USD:", rates.USD, "EUR:", rates.EUR);
         }
     } catch (e) {
-        console.error("Error conectando a la API de tasas.");
+        console.error("Error conectando a la API de tasas, usando respaldo.");
     }
     updateBCVUI();
     renderAll();
@@ -32,35 +41,46 @@ async function fetchBCVRate() {
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
-        rateDisplay.innerHTML = `💵 BCV: <b>${fmt(rates.USD)} BS</b>`;
+        // Mostramos ambas tasas con iconos claros
+        rateDisplay.innerHTML = `
+            <span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span>
+            <span>💶 € <b>${fmt(rates.EUR)}</b></span>
+        `;
+        
         rateDisplay.style.cursor = "pointer";
         rateDisplay.onclick = async () => {
-            const manual = prompt("Editar tasa USD manualmente:", rates.USD);
-            if(manual && !isNaN(manual)) {
-                rates.USD = parseFloat(manual);
-                updateBCVUI();
-                renderAll();
-                showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
+            const opcion = prompt("¿Qué tasa deseas editar manualmente?\n1: Dólar (USD)\n2: Euro (EUR)");
+            
+            if(opcion === "1") {
+                const manual = prompt("Nuevo valor Dólar (USD):", rates.USD);
+                if(manual && !isNaN(manual)) rates.USD = parseFloat(manual);
+            } else if(opcion === "2") {
+                const manual = prompt("Nuevo valor Euro (EUR):", rates.EUR);
+                if(manual && !isNaN(manual)) rates.EUR = parseFloat(manual);
+            } else {
+                return; // Si cancela o pone otra cosa, no hacemos nada
             }
+            
+            updateBCVUI();
+            renderAll();
+            showModal("Tasa Actualizada", "Has ajustado la tasa manualmente.", "✅");
         };
     }
 }
 
-// --- 2. AUTENTICACIÓN (CORREGIDA PARA EVITAR ERRORES VISUALES) ---
+// --- 2. AUTENTICACIÓN ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-buttons');
     const registerForm = document.getElementById('register-buttons');
     const authTitle = document.getElementById('auth-title');
 
-    // Resetear visibilidad
     loginForm.style.display = 'none';
     registerForm.style.display = 'none';
 
-    // Aplicar estilos consistentes para que no se vea distinto al volver
     const applyStyles = (el) => {
         el.style.display = 'flex';
         el.style.flexDirection = 'column';
-        el.style.gap = '15px'; // Espaciado igual para ambos
+        el.style.gap = '15px';
         el.style.width = '100%';
     };
 
@@ -146,7 +166,6 @@ function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     
-    // Mostramos la barra de header con logo y menú
     const headerUI = document.getElementById('app-header-ui');
     if(headerUI) headerUI.style.display = 'flex';
     
@@ -320,8 +339,6 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else document.getElementById('login-screen').style.display = 'flex';
 };
-
-
 
 
 
