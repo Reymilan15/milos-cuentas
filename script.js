@@ -90,7 +90,6 @@ function renderAll() {
     const totalSpentVES = transactions.reduce((s, x) => s + x.valueVES, 0);
     const remainingVES = budgetVES - totalSpentVES;
 
-    // Actualizar Lista Reciente (Inicio)
     const list = document.getElementById('transaction-list');
     if(list) {
         list.innerHTML = '';
@@ -106,7 +105,6 @@ function renderAll() {
         });
     }
 
-    // Actualizar Card de Saldo
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
     if(display) {
@@ -116,7 +114,6 @@ function renderAll() {
         display.innerText = `${fmt(finalValue)} ${currentView}`;
     }
 
-    // Colores de la tarjeta según estado
     if(card) {
         if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #ef4444, #991b1b)";
         else if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
@@ -185,7 +182,7 @@ function showSection(sec) {
     document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
     document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
     document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'stats') { renderChart(); updateStatsUI(); }
+    if(sec === 'stats') { renderChart(); }
     if(sec === 'registros') renderFullHistory();
     if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
 }
@@ -206,6 +203,16 @@ function renderFullHistory() {
     });
 }
 
+// ELIMINAR TRANSACCIÓN (RECUPERADA)
+async function deleteTransaction(id) {
+    const confirmar = await showModal("Eliminar", "¿Estás seguro de borrar este registro?", "🗑️", true);
+    if (confirmar) {
+        transactions = transactions.filter(t => t.id !== id);
+        renderAll();
+        await syncToCloud();
+    }
+}
+
 function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -221,7 +228,7 @@ function showModal(title, message, icon, isConfirm = false) {
     });
 }
 
-// --- 6. SYNC Y AUTH (CONEXIÓN API RENDER) ---
+// --- 6. SYNC Y AUTH ---
 async function syncToCloud() {
     if (!currentUser) return;
     try {
@@ -255,6 +262,29 @@ async function login() {
             showModal("Error", "Usuario o contraseña incorrectos", "🚫");
         }
     } catch (e) { showModal("Error", "No se pudo conectar al servidor", "🌐"); }
+}
+
+async function register() {
+    const username = document.getElementById('reg-username').value;
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+
+    if(!username || !name || !password) return showModal("Error", "Faltan campos obligatorios", "⚠️");
+
+    try {
+        const response = await fetch(`${API_URL}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, name, email, password })
+        });
+        if (response.ok) {
+            showModal("¡Éxito!", "Cuenta creada correctamente.", "🎉");
+            toggleAuth(false);
+        } else {
+            showModal("Error", "El usuario ya existe o hubo un error", "🚫");
+        }
+    } catch (e) { showModal("Error", "Servidor no disponible", "🌐"); }
 }
 
 function entrarALaApp() {
@@ -300,5 +330,6 @@ function logout() {
 window.onload = () => {
     if (currentUser) entrarALaApp();
 };
+
 
 
