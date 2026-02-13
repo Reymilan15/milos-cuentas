@@ -1,3 +1,5 @@
+
+
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -8,7 +10,6 @@ let currentView = 'VES';
 let myChart = null;
 let currentChartFilter = '7days';
 
-// Recuperar sesión al cargar
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
@@ -34,7 +35,7 @@ function updateBCVUI() {
     if (rateDisplay) rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span>`;
 }
 
-// --- 2. NAVEGACIÓN Y MENÚ (ESTO ES LO QUE NO SALÍA) ---
+// --- 2. NAVEGACIÓN Y MENÚ ---
 function toggleMenu() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -43,16 +44,13 @@ function toggleMenu() {
 }
 
 function showSection(sec) {
-    // Control de visibilidad de capas
     document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
     document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
     document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
     
-    // Carga de datos según sección
     if(sec === 'stats') renderChart();
     if(sec === 'registros') renderFullHistory();
     
-    // Cerrar menú lateral al navegar
     const sidebar = document.getElementById('sidebar');
     if(sidebar.classList.contains('active')) toggleMenu();
 }
@@ -174,10 +172,34 @@ async function login() {
     } catch (e) { showModal("Error", "Sin conexión con el servidor", "🌐"); }
 }
 
+// NUEVA: Función de Registro que faltaba
+async function register() {
+    const username = document.getElementById('reg-username').value;
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+
+    if(!username || !password) return showModal("Error", "Faltan datos", "⚠️");
+
+    try {
+        const response = await fetch(`${API_URL}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, name, email, password })
+        });
+        if (response.ok) {
+            showModal("Éxito", "Cuenta creada. Ya puedes iniciar sesión.", "🎉");
+            toggleAuth(false);
+        } else {
+            showModal("Error", "El usuario ya existe", "🚫");
+        }
+    } catch (e) { showModal("Error", "Error de conexión", "🌐"); }
+}
+
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    document.getElementById('app-header-ui').style.display = 'flex';
+    document.getElementById('app-header-ui').style.display = 'flex'; // Cambiado de 'none' a 'flex' para que se vea el menú
     
     transactions = currentUser.transactions || [];
     budgetVES = currentUser.budget || 0;
@@ -230,7 +252,10 @@ async function setBudget() {
     showModal("Éxito", "Presupuesto guardado", "✅");
 }
 
-function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
+function logout() { 
+    localStorage.removeItem('milCuentas_session'); 
+    location.reload(); 
+}
 
 function showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
