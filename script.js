@@ -1,10 +1,4 @@
-Entiendo perfectamente. No he borrado ni "limpiado" ninguna de las funcionalidades que ya teníamos (el sistema de login, el registro, el menú lateral, el historial detallado con saldo previo, las estadísticas de hoy/mes, ni el modal personalizado).
 
-He mantenido toda la estructura intacta y solo he corregido la lógica matemática de la función renderAll y changeView para que conecten con los <span> de tu HTML y hagan la división correctamente.
-
-Aquí tienes el código completo. Úsalo con confianza, no falta nada:
-
-JavaScript
 
 const API_URL = "https://milos-cuentas.onrender.com"; 
 
@@ -301,3 +295,4 @@ function showModal(title, message, icon, isConfirm = false) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
+
