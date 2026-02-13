@@ -11,7 +11,7 @@
 </head>
 <body>
 
-    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; padding: 10px 15px; align-items: center; justify-content: space-between;">
+    <div id="app-header-ui" style="display: none;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div id="menu-btn" class="menu-toggle" onclick="toggleMenu()">
                 <span></span><span></span><span></span>
@@ -53,7 +53,7 @@
                 <input type="text" id="username" placeholder="Usuario o Correo">
                 <input type="password" id="login-password" placeholder="Contraseña">
                 <button onclick="login()" class="btn-primary">Entrar a mi Cuenta</button>
-                <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)">Regístrate aquí</span></p>
+                <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)" style="color: var(--primary); cursor: pointer;">Regístrate aquí</span></p>
             </div>
 
             <div id="register-form-container" style="display: none;">
@@ -62,7 +62,7 @@
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
                 <input type="password" id="reg-password" placeholder="Contraseña">
                 <button onclick="register()" class="btn-success">Crear Cuenta</button>
-                <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)">Inicia sesión</span></p>
+                <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: var(--primary); cursor: pointer;">Inicia sesión</span></p>
             </div>
         </div>
     </div>
@@ -164,4 +164,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
