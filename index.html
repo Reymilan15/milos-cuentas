@@ -38,7 +38,7 @@
         
         <nav class="sidebar-nav">
             <a href="#" onclick="showSection('inicio')">🏠 Inicio</a>
-            <a href="#" onclick="showSection('stats')">📊 Estadísticas</a>
+            <a href="#" onclick="showSection('registros')">📝 Registro Detallado</a> <a href="#" onclick="showSection('stats')">📊 Estadísticas</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -116,6 +116,27 @@
             </section>
         </div>
 
+        <div id="section-registros" style="display: none;">
+            <header>
+                <h1>Libro de Gastos</h1>
+                <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Historial detallado con saldos previos</p>
+            </header>
+            <div style="overflow-x: auto; background: var(--card-bg, #1e293b); border-radius: 12px; padding: 10px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 400px; color: white;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #4f46e5; text-align: left; font-size: 0.8rem;">
+                            <th style="padding: 10px;">FECHA/HORA</th>
+                            <th style="padding: 10px;">DESCRIPCIÓN</th>
+                            <th style="padding: 10px;">MONTO</th>
+                            <th style="padding: 10px;">SALDO PREVIO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-history-body" style="font-size: 0.85rem;"></tbody>
+                </table>
+            </div>
+            <button class="btn-primary" style="margin: 30px auto; display: block;" onclick="showSection('inicio')">Volver al Inicio</button>
+        </div>
+
         <div id="section-stats" style="display: none;">
             <header>
                 <h1>Estadísticas</h1>
@@ -142,3 +163,8 @@
     <script src="script.js"></script>
 </body>
 </html>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
