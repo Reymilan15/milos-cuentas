@@ -231,49 +231,46 @@ button {
 }
 * --- CORRECCIONES PARA EL MENÚ (AÑADIDO SIN BORRAR NADA) --- */
 
-/* Estilo para el botón hamburguesa */
+/* --- ICONO DE MENÚ MODERNO --- */
 .menu-toggle {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
-    padding: 10px;
-    z-index: 1100;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.menu-toggle:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--primary);
 }
 
 .menu-toggle span {
     display: block;
-    width: 25px;
-    height: 3px;
+    width: 22px;
+    height: 2px;
     background-color: var(--text-white);
-    border-radius: 3px;
-    transition: 0.3s;
+    border-radius: 4px;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Estilo para los enlaces del menú lateral */
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 30px;
+/* La raya del medio es un poco más corta para dar estilo */
+.menu-toggle span:nth-child(2) {
+    width: 16px;
+    align-self: flex-start;
+    margin-left: 11px;
 }
 
-.sidebar-nav a {
-    color: var(--text-white);
-    text-decoration: none;
-    padding: 15px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: 0.3s;
-}
-
-.sidebar-nav a:hover {
-    background: var(--primary);
-}
-
-/* Asegurar que el overlay cubra todo */
-.sidebar-overlay {
-    backdrop-filter: blur(4px);
+.menu-toggle:hover span:nth-child(2) {
+    width: 22px;
+    margin-left: 0;
 }
 
 
