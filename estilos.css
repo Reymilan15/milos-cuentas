@@ -229,6 +229,53 @@ button {
     background: white; color: black;
     padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
 }
+* --- CORRECCIONES PARA EL MENÚ (AÑADIDO SIN BORRAR NADA) --- */
+
+/* Estilo para el botón hamburguesa */
+.menu-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1100;
+}
+
+.menu-toggle span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: var(--text-white);
+    border-radius: 3px;
+    transition: 0.3s;
+}
+
+/* Estilo para los enlaces del menú lateral */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.sidebar-nav a {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: 0.3s;
+}
+
+.sidebar-nav a:hover {
+    background: var(--primary);
+}
+
+/* Asegurar que el overlay cubra todo */
+.sidebar-overlay {
+    backdrop-filter: blur(4px);
+}
+
 
 
 
