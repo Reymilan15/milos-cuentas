@@ -1,4 +1,3 @@
-// --- CONFIGURACIÓN Y ESTADO (Mantenido intacto) ---
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -6,6 +5,7 @@ let budgetVES = 0;
 let spendingLimitVES = 0;
 let currentView = 'VES'; 
 let rates = { "USD": 1, "EUR": 1, "VES": 1 };
+let myChart = null; // Para controlar el gráfico lineal
 
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 let userName = "Usuario";
@@ -13,7 +13,7 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. ACTUALIZACIÓN DIARIA BCV (Tasa del día) ---
+// --- 1. ACTUALIZACIÓN DIARIA BCV ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
@@ -21,10 +21,9 @@ async function fetchBCVRate() {
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
             rates.EUR = rates.USD * 1.08; 
-            console.log("Tasas actualizadas con éxito");
         }
     } catch (e) { 
-        console.error("Error al obtener tasas BCV. Usando respaldo.");
+        console.error("Error BCV");
         if(rates.USD === 1) rates.USD = 36.50; 
     }
     updateBCVUI();
@@ -38,7 +37,7 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LÓGICA DE CONVERSIÓN (Tu división matemática respetada) ---
+// --- 2. LÓGICA DE CONVERSIÓN (DIVISIÓN) ---
 function changeView(iso) {
     currentView = iso;
     renderAll(); 
@@ -48,22 +47,13 @@ function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
-    
     if(!list || !display) return;
 
     let totalSpentVES = 0;
-    let totalHoy = 0;
-    let totalMes = 0;
     list.innerHTML = '';
-    const hoy = new Date();
-
+    
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
-        const tDate = new Date(t.date);
-        
-        if (tDate.toDateString() === hoy.toDateString()) totalHoy += t.valueVES;
-        if (tDate.getMonth() === hoy.getMonth() && tDate.getFullYear() === hoy.getFullYear()) totalMes += t.valueVES;
-
         const li = document.createElement('li');
         li.innerHTML = `<div><b>${t.desc}</b><br><small>${fmt(t.originalAmount)} ${t.originalCurrency}</small></div>
             <div style="text-align: right;"><strong>-${fmt(t.valueVES)} BS</strong><br>
@@ -72,8 +62,6 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
-    
-    // OPERACIÓN DE DIVISIÓN SEGÚN TU SOLICITUD
     let finalValue = remainingVES;
     if (currentView === "USD") finalValue = remainingVES / rates.USD;
     else if (currentView === "EUR") finalValue = remainingVES / rates.EUR;
@@ -85,59 +73,98 @@ function renderAll() {
     } else {
         card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     }
-    if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
-
-    updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 3. REGISTRO DE GASTOS (Con saldo previo respetado) ---
-async function addTransaction() {
-    const desc = document.getElementById('desc').value;
-    const amount = parseFloat(document.getElementById('amount').value);
-    const currency = document.getElementById('currency').value;
-
-    if (!desc || isNaN(amount)) return showModal("Error", "Faltan datos", "🛒");
-
-    let amountInVES = amount;
-    if (currency === "USD") amountInVES = amount * rates.USD;
-    else if (currency === "EUR") amountInVES = amount * rates.EUR;
+// --- 3. GRÁFICOS Y ESTADÍSTICAS ---
+function renderChart() {
+    const ctx = document.getElementById('spendingChart').getContext('2d');
+    const last7Days = {};
+    const hoy = new Date();
     
-    const currentSpent = transactions.reduce((sum, t) => sum + t.valueVES, 0);
-    const balanceAtMoment = budgetVES - currentSpent;
+    // Generar labels de los últimos 7 días
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(hoy.getDate() - i);
+        last7Days[d.toLocaleDateString()] = 0;
+    }
 
-    transactions.push({ 
-        id: Date.now(), 
-        date: new Date().toISOString(), 
-        desc, 
-        originalAmount: amount, 
-        originalCurrency: currency, 
-        valueVES: amountInVES,
-        balanceAtMoment: balanceAtMoment 
+    transactions.forEach(t => {
+        const dateStr = new Date(t.date).toLocaleDateString();
+        if (last7Days.hasOwnProperty(dateStr)) last7Days[dateStr] += t.valueVES;
     });
 
-    document.getElementById('desc').value = '';
-    document.getElementById('amount').value = '';
-    renderAll();
-    await syncToCloud();
+    if (myChart) myChart.destroy();
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Object.keys(last7Days),
+            datasets: [{
+                data: Object.values(last7Days),
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                x: { ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
 }
 
-// --- 4. AUTENTICACIÓN (Sin agrupaciones raras al cerrar sesión) ---
+function updateStatsUI() {
+    const p = document.getElementById('stats-panel');
+    const hoy = new Date();
+    let tHoy = 0, tMes = 0, tAno = 0;
+
+    transactions.forEach(t => {
+        const d = new Date(t.date);
+        if(d.toDateString() === hoy.toDateString()) tHoy += t.valueVES;
+        if(d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear()) tMes += t.valueVES;
+        if(d.getFullYear() === hoy.getFullYear()) tAno += t.valueVES;
+    });
+
+    if(p) {
+        p.innerHTML = `
+            <div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px; border-left: 4px solid #4f46e5;">
+                <small style="color:#94a3b8">GASTOS HOY</small><br><b>${fmt(tHoy)} BS</b>
+            </div>
+            <div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px; border-left: 4px solid #7c3aed;">
+                <small style="color:#94a3b8">GASTOS MES</small><br><b>${fmt(tMes)} BS</b>
+            </div>
+            <div style="padding:15px; background:#1e293b; border-radius:12px; border-left: 4px solid #10b981;">
+                <small style="color:#94a3b8">GASTOS AÑO</small><br><b>${fmt(tAno)} BS</b>
+            </div>`;
+    }
+}
+
+// --- 4. NAVEGACIÓN Y SECCIONES ---
+function showSection(sec) {
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    
+    if(sec === 'registros') renderFullHistory();
+    if(sec === 'stats') { renderChart(); updateStatsUI(); }
+    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
+}
+
+// --- 5. AUTENTICACIÓN Y REGISTRO ---
 window.toggleAuth = (reg) => {
     const loginCont = document.getElementById('login-form-container');
     const regCont = document.getElementById('register-form-container');
-    const authTitle = document.getElementById('auth-title');
-
-    if (reg) {
-        loginCont.style.display = 'none';
-        regCont.style.display = 'flex';
-        regCont.style.flexDirection = 'column'; // Orden vertical corregido
-        authTitle.innerText = "Crear Cuenta";
-    } else {
-        loginCont.style.display = 'flex';
-        loginCont.style.flexDirection = 'column'; // Orden vertical corregido
-        regCont.style.display = 'none';
-        authTitle.innerText = "Iniciar Sesión";
-    }
+    loginCont.style.display = reg ? 'none' : 'flex';
+    regCont.style.display = reg ? 'flex' : 'none';
+    loginCont.style.flexDirection = 'column';
+    regCont.style.flexDirection = 'column';
+    document.getElementById('auth-title').innerText = reg ? "Crear Cuenta" : "Iniciar Sesión";
 };
 
 async function login() {
@@ -151,9 +178,8 @@ async function login() {
         });
         if (response.ok) {
             const user = await response.json();
-            currentUser = user;
             localStorage.setItem('milCuentas_session', JSON.stringify(user));
-            entrarALaApp();
+            location.reload();
         } else { showModal("Error", "Credenciales incorrectas", "🚫"); }
     } catch (e) { showModal("Error", "Error de conexión", "❌"); }
 }
@@ -177,7 +203,44 @@ function entrarALaApp() {
     fetchBCVRate(); 
 }
 
-// --- 5. FUNCIONES DE APOYO (Historial detallado y Sync) ---
+// --- 6. GASTOS Y SYNC ---
+async function addTransaction() {
+    const desc = document.getElementById('desc').value;
+    const amount = parseFloat(document.getElementById('amount').value);
+    const currency = document.getElementById('currency').value;
+    if (!desc || isNaN(amount)) return;
+
+    let valVES = amount;
+    if (currency === "USD") valVES = amount * rates.USD;
+    else if (currency === "EUR") valVES = amount * rates.EUR;
+    
+    const currentSpent = transactions.reduce((sum, t) => sum + t.valueVES, 0);
+    transactions.push({ 
+        id: Date.now(), date: new Date().toISOString(), 
+        desc, originalAmount: amount, originalCurrency: currency, 
+        valueVES: valVES, balanceAtMoment: budgetVES - currentSpent 
+    });
+
+    renderAll();
+    await syncToCloud();
+    document.getElementById('desc').value = '';
+    document.getElementById('amount').value = '';
+}
+
+async function syncToCloud() {
+    if (!currentUser) return;
+    try {
+        await fetch(`${API_URL}/api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser.username, budget: budgetVES,
+                spendingLimit: spendingLimitVES, transactions: transactions
+            })
+        });
+    } catch (e) { console.error("Error Sync"); }
+}
+
 function renderFullHistory() {
     const tableBody = document.getElementById('full-history-body');
     if(!tableBody) return;
@@ -194,59 +257,23 @@ function renderFullHistory() {
     });
 }
 
-async function syncToCloud() {
-    if (!currentUser) return;
-    try {
-        await fetch(`${API_URL}/api/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser.username, budget: budgetVES,
-                spendingLimit: spendingLimitVES, transactions: transactions
-            })
-        });
-    } catch (e) { console.error("Error de sincronización"); }
-}
-
-function updateStatsUI(hoy, mes) {
-    const p = document.getElementById('stats-panel');
-    if(p) p.innerHTML = `<div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px;">GASTOS HOY: ${fmt(hoy)} BS</div>
-                         <div style="padding:15px; background:#1e293b; border-radius:12px;">GASTOS MES: ${fmt(mes)} BS</div>`;
-}
-
-function showSection(sec) {
-    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
-    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
-    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'registros') renderFullHistory();
-    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-}
-
+// --- OTROS ---
 function toggleMenu() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('sidebar-overlay').classList.toggle('active');
 }
-
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
-
-async function deleteTransaction(id) { 
-    if(await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) { 
-        transactions = transactions.filter(t => t.id !== id); 
-        renderAll(); await syncToCloud(); 
-    } 
+async function setBudget() { 
+    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
+    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
+    renderAll(); await syncToCloud(); 
 }
-
-function showModal(title, message, icon, isConfirm = false) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-modal');
-        document.getElementById('modal-title').innerText = title;
-        document.getElementById('modal-text').innerText = message;
-        document.getElementById('modal-icon').innerText = icon;
-        document.getElementById('modal-cancel-btn').style.display = isConfirm ? "block" : "none";
-        modal.style.display = "flex";
-        document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; resolve(true); };
-        document.getElementById('modal-cancel-btn').onclick = () => { modal.style.display = "none"; resolve(false); };
-    });
+function showModal(title, message, icon) {
+    const modal = document.getElementById('custom-modal');
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-text').innerText = message;
+    document.getElementById('modal-icon').innerText = icon;
+    modal.style.display = "flex";
+    document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; };
 }
-
 window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
