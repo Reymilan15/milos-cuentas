@@ -21,16 +21,7 @@ async function fetchBCVRate() {
             rates.USD = parseFloat(data.monedas.usd.valor);
             rates.EUR = parseFloat(data.monedas.eur.valor);
         }
-    } catch (e) {
-        try {
-            const resAlt = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-            const dataAlt = await resAlt.json();
-            if(dataAlt.promedio) {
-                rates.USD = dataAlt.promedio;
-                rates.EUR = rates.USD * 1.08;
-            }
-        } catch (err) { console.error("Error en tasas."); }
-    }
+    } catch (e) { console.error("Error tasas."); }
     updateBCVUI();
     renderAll();
 }
@@ -42,12 +33,11 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. AUTENTICACIÓN (LOGIN Y REGISTRO SEPARADOS) ---
+// --- 2. AUTENTICACIÓN ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-form-container');
     const registerForm = document.getElementById('register-form-container');
     const authTitle = document.getElementById('auth-title');
-
     if (showRegister) {
         loginForm.style.display = 'none';
         registerForm.style.display = 'flex';
@@ -93,7 +83,6 @@ async function register() {
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
     if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
-
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -110,15 +99,13 @@ async function register() {
     } catch (e) { showModal("Error", "Error de red", "📡"); }
 }
 
-// --- 3. FUNCIONES DE LA APP ---
+// --- 3. FUNCIONES CORE ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
-    
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
-    
     updateUserUI();
     fetchBCVRate(); 
     showSection('inicio');
@@ -143,14 +130,13 @@ function changeView(iso) {
 }
 
 async function resetApp() {
-    if (await showModal("Borrar Todo", "¿Seguro que quieres resetear tus cuentas?", "🗑️", true)) {
+    if (await showModal("Borrar Todo", "¿Seguro que quieres resetear?", "🗑️", true)) {
         transactions = [];
         budgetVES = 0;
         spendingLimitVES = 0;
         document.getElementById('total-budget').value = "";
         document.getElementById('spending-limit').value = "";
-        renderAll();
-        await syncToCloud();
+        renderAll(); await syncToCloud();
     }
 }
 
@@ -158,17 +144,22 @@ async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
-    if (!desc || isNaN(amount)) return showModal("Error", "Ingresa descripción y monto", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Datos vacíos", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
     
+    // Cálculo del saldo en ese momento exacto
+    const currentSpent = transactions.reduce((s, t) => s + t.valueVES, 0);
+    const balanceNow = budgetVES - currentSpent;
+
     transactions.push({ 
         id: Date.now(), 
         date: new Date().toISOString(), 
         desc, 
         originalAmount: amount, 
         originalCurrency: currency, 
-        valueVES: amountInVES 
+        valueVES: amountInVES,
+        balanceAtMoment: balanceNow 
     });
 
     document.getElementById('desc').value = '';
@@ -201,30 +192,55 @@ function renderAll() {
     });
 
     const remainingVES = budgetVES - totalSpentVES;
-    
-    // Lógica de Alerta por límite
-    if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) {
-        card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; // Naranja alerta
-    } else {
-        card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
-    }
+    if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+    else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
 
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
-    
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- RESTO DE FUNCIONES (Stats, Sidebar, Modales) ---
+// --- 4. NUEVA FUNCIÓN: RENDER TABLA DETALLADA ---
+function renderFullHistory() {
+    const tableBody = document.getElementById('full-history-body');
+    if(!tableBody) return;
+    tableBody.innerHTML = '';
+    [...transactions].reverse().forEach(t => {
+        const d = new Date(t.date);
+        const fecha = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+        const hora = `${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}`;
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid #334155";
+        tr.innerHTML = `
+            <td style="padding:10px; line-height:1.2;">${fecha}<br><small style="color:#94a3b8">${hora}</small></td>
+            <td style="padding:10px;">${t.desc}</td>
+            <td style="padding:10px; color:#f87171;">-${fmt(t.valueVES)} BS</td>
+            <td style="padding:10px; color:#4ade80;">${fmt(t.balanceAtMoment || 0)} BS</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+}
+
+function showSection(sec) {
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    if(sec === 'registros') renderFullHistory();
+    if(sidebar.classList.contains('active')) toggleMenu();
+}
+
+// --- OTROS ---
 function updateStatsUI(hoy, mes) {
-    const panel = document.getElementById('stats-panel');
-    if(panel) panel.innerHTML = `<div class="stat-item">Hoy: ${fmt(hoy)} BS</div><div class="stat-item">Mes: ${fmt(mes)} BS</div>`;
+    const p = document.getElementById('stats-panel');
+    if(p) p.innerHTML = `<div style="padding:15px; background:#1e293b; border-radius:10px; margin-bottom:10px;">Gastado Hoy: ${fmt(hoy)} BS</div><div style="padding:15px; background:#1e293b; border-radius:10px;">Gastado Mes: ${fmt(mes)} BS</div>`;
 }
 
 async function deleteTransaction(id) {
-    transactions = transactions.filter(t => t.id !== id);
-    renderAll(); await syncToCloud();
+    if(await showModal("Eliminar", "¿Borrar este gasto?", "🗑️", true)) {
+        transactions = transactions.filter(t => t.id !== id);
+        renderAll(); await syncToCloud();
+    }
 }
 
 async function syncToCloud() {
@@ -240,7 +256,7 @@ async function syncToCloud() {
                 transactions: transactions
             })
         });
-    } catch (e) { console.error("Error Sync"); }
+    } catch (e) { console.error("Sync error"); }
 }
 
 function toggleMenu() {
@@ -248,14 +264,9 @@ function toggleMenu() {
     document.getElementById('sidebar-overlay').classList.toggle('active');
 }
 
-function showSection(sec) {
-    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
-    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
-    toggleMenu();
-}
-
 function updateUserUI() {
     document.getElementById('side-username').innerText = userName;
+    document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
 }
 
 function showModal(title, message, icon, isConfirm = false) {
@@ -275,7 +286,6 @@ window.onload = () => {
     if (currentUser) entrarALaApp();
     else window.toggleAuth(false);
 };
-
 
 
 
