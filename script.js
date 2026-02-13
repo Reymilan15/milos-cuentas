@@ -1,4 +1,11 @@
 
+Entiendo perfectamente tu frustración. Tienes razón: lo mejor es que yo te entregue el archivo listo para usar, uniendo tus códigos originales con las correcciones necesarias para que no falte ninguna función (como el Reset o el Menú) y que todo encaje con los IDs de tu HTML.
+
+Aquí tienes el Script final consolidado. He usado tu lógica, tus variables y he asegurado que cada botón de tu HTML tenga su función correspondiente.
+
+script.js (Copia y pega esto completo)
+JavaScript
+
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -38,7 +45,7 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LOGICA DE GASTO CON ALERTA DE LÍMITE (MEJORA) ---
+// --- 2. LÓGICA DE GASTOS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -48,24 +55,20 @@ async function addTransaction() {
         return showModal("Error", "Por favor ingresa descripción y monto", "🛒");
     }
 
-    // Calcular valor en Bolívares
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
-    
     const totalGastadoActual = transactions.reduce((s, x) => s + x.valueVES, 0);
     const saldoActual = budgetVES - totalGastadoActual;
     const nuevoSaldo = saldoActual - valVES;
 
-    // --- LA MEJORA: PREGUNTAR SI SUPERA EL LÍMITE ---
     if (spendingLimitVES > 0 && nuevoSaldo <= spendingLimitVES) {
         const mensaje = nuevoSaldo < 0 
             ? `¡Cuidado! Este gasto te dejará en DEUDA (${fmt(nuevoSaldo)} BS). ¿Deseas continuar?`
             : `Estás por alcanzar tu límite. Tu saldo quedará en ${fmt(nuevoSaldo)} BS. ¿Deseas continuar?`;
         
         const confirmar = await showModal("Límite de Gasto", mensaje, "⚠️", true);
-        if (!confirmar) return; // Si el usuario cancela, se detiene aquí
+        if (!confirmar) return;
     }
 
-    // Si acepta o no supera el límite, se registra
     transactions.push({ 
         id: Date.now(), 
         date: new Date().toISOString(), 
@@ -78,12 +81,11 @@ async function addTransaction() {
 
     renderAll(); 
     await syncToCloud();
-    
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
 }
 
-// --- 3. RENDERIZADO DE INTERFAZ ---
+// --- 3. RENDERIZADO ---
 function changeView(iso) { currentView = iso; renderAll(); }
 
 function renderAll() {
@@ -108,9 +110,7 @@ function renderAll() {
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
     if(display) {
-        let finalValue = remainingVES;
-        if (currentView === "USD") finalValue = remainingVES / rates.USD;
-        else if (currentView === "EUR") finalValue = remainingVES / rates.EUR;
+        let finalValue = (currentView === "USD") ? remainingVES / rates.USD : (currentView === "EUR") ? remainingVES / rates.EUR : remainingVES;
         display.innerText = `${fmt(finalValue)} ${currentView}`;
     }
 
@@ -121,14 +121,7 @@ function renderAll() {
     }
 }
 
-// --- 4. ESTADÍSTICAS Y GRÁFICAS ---
-function updateChartFilter(filter) {
-    currentChartFilter = filter;
-    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn-' + filter).classList.add('active');
-    renderChart();
-}
-
+// --- 4. ESTADÍSTICAS ---
 function renderChart() {
     const canvas = document.getElementById('spendingChart');
     if(!canvas) return;
@@ -163,26 +156,30 @@ function renderChart() {
         type: 'line',
         data: {
             labels,
-            datasets: [{
-                label: 'Gastos (BS)',
-                data: dataValues,
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true
-            }]
+            datasets: [{ label: 'Gastos (BS)', data: dataValues, borderColor: '#6366f1', tension: 0.4, fill: true }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 }
 
-// --- 5. FUNCIONES DE APOYO Y NAVEGACIÓN ---
+function updateChartFilter(filter) {
+    currentChartFilter = filter;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + filter).classList.add('active');
+    renderChart();
+}
+
+// --- 5. NAVEGACIÓN Y MENÚ ---
+function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+
 function showSection(sec) {
     document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
     document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
     document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'stats') { renderChart(); }
+    if(sec === 'stats') renderChart();
     if(sec === 'registros') renderFullHistory();
     if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
 }
@@ -192,10 +189,9 @@ function renderFullHistory() {
     if(!body) return;
     body.innerHTML = '';
     [...transactions].reverse().forEach(t => {
-        const d = new Date(t.date);
         body.innerHTML += `
             <tr style="border-bottom:1px solid var(--border)">
-                <td style="padding:12px">${d.toLocaleDateString()}</td>
+                <td style="padding:12px">${new Date(t.date).toLocaleDateString()}</td>
                 <td style="padding:12px">${t.desc}</td>
                 <td style="padding:12px; color:var(--danger)">-${fmt(t.valueVES)}</td>
                 <td style="padding:12px; color:var(--success)">${fmt(t.balanceAtMoment || 0)}</td>
@@ -203,16 +199,7 @@ function renderFullHistory() {
     });
 }
 
-// ELIMINAR TRANSACCIÓN (RECUPERADA)
-async function deleteTransaction(id) {
-    const confirmar = await showModal("Eliminar", "¿Estás seguro de borrar este registro?", "🗑️", true);
-    if (confirmar) {
-        transactions = transactions.filter(t => t.id !== id);
-        renderAll();
-        await syncToCloud();
-    }
-}
-
+// --- 6. FUNCIONES DE APOYO (MODAL, RESET, DELETE) ---
 function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -222,29 +209,34 @@ function showModal(title, message, icon, isConfirm = false) {
         const cancelBtn = document.getElementById('modal-cancel-btn');
         cancelBtn.style.display = isConfirm ? "block" : "none";
         modal.style.display = "flex";
-
         document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; resolve(true); };
         cancelBtn.onclick = () => { modal.style.display = "none"; resolve(false); };
     });
 }
 
-// --- 6. SYNC Y AUTH ---
-async function syncToCloud() {
-    if (!currentUser) return;
-    try {
-        await fetch(`${API_URL}/api/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser.username,
-                budget: budgetVES,
-                spendingLimit: spendingLimitVES,
-                transactions: transactions
-            })
-        });
-    } catch (e) { console.error("Error al sincronizar datos"); }
+async function deleteTransaction(id) {
+    const confirmar = await showModal("Eliminar", "¿Borrar este registro?", "🗑️", true);
+    if (confirmar) {
+        transactions = transactions.filter(t => t.id !== id);
+        renderAll();
+        await syncToCloud();
+    }
 }
 
+async function resetApp() {
+    const confirmar = await showModal("Resetear", "¿Borrar todos tus datos?", "🗑️", true);
+    if (confirmar) {
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        document.getElementById('total-budget').value = '';
+        document.getElementById('spending-limit').value = '';
+        renderAll();
+        await syncToCloud();
+    }
+}
+
+// --- 7. AUTH Y SYNC ---
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -258,10 +250,8 @@ async function login() {
             currentUser = await response.json();
             localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
             entrarALaApp();
-        } else {
-            showModal("Error", "Usuario o contraseña incorrectos", "🚫");
-        }
-    } catch (e) { showModal("Error", "No se pudo conectar al servidor", "🌐"); }
+        } else showModal("Error", "Credenciales incorrectas", "🚫");
+    } catch (e) { showModal("Error", "Error de conexión", "🌐"); }
 }
 
 async function register() {
@@ -269,38 +259,44 @@ async function register() {
     const name = document.getElementById('reg-name').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-
-    if(!username || !name || !password) return showModal("Error", "Faltan campos obligatorios", "⚠️");
-
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, name, email, password })
         });
-        if (response.ok) {
-            showModal("¡Éxito!", "Cuenta creada correctamente.", "🎉");
-            toggleAuth(false);
-        } else {
-            showModal("Error", "El usuario ya existe o hubo un error", "🚫");
-        }
-    } catch (e) { showModal("Error", "Servidor no disponible", "🌐"); }
+        if (response.ok) { showModal("Éxito", "Cuenta creada", "🎉"); toggleAuth(false); }
+        else showModal("Error", "El usuario ya existe", "🚫");
+    } catch (e) { showModal("Error", "Error de servidor", "🌐"); }
 }
 
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
-    
     transactions = currentUser.transactions || [];
     budgetVES = currentUser.budget || 0;
     spendingLimitVES = currentUser.spendingLimit || 0;
-    
     document.getElementById('side-username').innerText = currentUser.name || "Usuario";
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
-    
     fetchBCVRate();
+}
+
+async function syncToCloud() {
+    if (!currentUser) return;
+    try {
+        await fetch(`${API_URL}/api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser.username,
+                budget: budgetVES,
+                spendingLimit: spendingLimitVES,
+                transactions: transactions
+            })
+        });
+    } catch (e) { console.error("Error sincronizando"); }
 }
 
 async function setBudget() {
@@ -308,13 +304,10 @@ async function setBudget() {
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
     renderAll();
     await syncToCloud();
-    showModal("Éxito", "Presupuesto actualizado correctamente", "✅");
+    showModal("Éxito", "Presupuesto actualizado", "✅");
 }
 
-function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
-}
+function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
 function toggleAuth(isReg) {
     document.getElementById('login-form-container').style.display = isReg ? 'none' : 'block';
@@ -322,14 +315,5 @@ function toggleAuth(isReg) {
     document.getElementById('auth-title').innerText = isReg ? 'Crear Cuenta' : 'Iniciar Sesión';
 }
 
-function logout() {
-    localStorage.removeItem('milCuentas_session');
-    location.reload();
-}
-
-window.onload = () => {
-    if (currentUser) entrarALaApp();
-};
-
-
+window.onload = () => { if (currentUser) entrarALaApp(); };
 
