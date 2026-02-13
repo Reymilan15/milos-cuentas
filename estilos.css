@@ -229,9 +229,7 @@ button {
     background: white; color: black;
     padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
 }
-* --- CORRECCIONES PARA EL MENÚ (AÑADIDO SIN BORRAR NADA) --- */
 
-/* --- ICONO DE MENÚ MODERNO --- */
 .menu-toggle {
     display: flex;
     flex-direction: column;
@@ -272,6 +270,7 @@ button {
     width: 22px;
     margin-left: 0;
 }
+
 
 
 
