@@ -11,12 +11,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mil Cuentas">
     
-    <link rel="icon" type="image/png" href="logo.png"> <link rel="manifest" href="/milos-cuentas/manifest.json">
+    <link rel="icon" type="image/png" href="logo.png"> 
+    <link rel="manifest" href="/milos-cuentas/manifest.json">
     <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
-    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; background: var(--bg-color); padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;">
+    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; background: var(--bg-color); padding: 10px 15px; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div id="menu-btn" class="menu-toggle" onclick="toggleMenu()">
                 <span></span><span></span><span></span>
@@ -38,7 +39,6 @@
         <nav class="sidebar-nav">
             <a href="#" onclick="showSection('inicio')">🏠 Inicio</a>
             <a href="#" onclick="showSection('stats')">📊 Estadísticas</a>
-            <a href="#" onclick="showSection('edit')">⚙️ Editar Usuario</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -50,44 +50,40 @@
 
     <div id="login-screen" class="auth-container">
         <div class="auth-box">
-            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" alt="Mil Cuentas Logo" style="width: 80px; margin-bottom: 10px;">
+            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" alt="Logo" style="width: 80px; margin-bottom: 10px;">
             <h1>Mil Cuentas</h1>
-            <p id="auth-title">Iniciar Sesión</p>
+            <h2 id="auth-title" style="font-size: 1.2rem; margin-bottom: 20px; color: var(--text-color);">Iniciar Sesión</h2>
             
-            <div id="login-buttons">
+            <div id="login-form-container">
                 <input type="text" id="username" placeholder="Usuario o Correo">
                 <input type="password" id="login-password" placeholder="Contraseña">
                 <button onclick="login()" class="btn-primary">Entrar a mi Cuenta</button>
-                <p>¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)">Regístrate aquí</span></p>
+                <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)" style="color: #4f46e5; cursor: pointer; font-weight: bold;">Regístrate aquí</span></p>
             </div>
 
-            <div id="register-buttons" style="display: none;">
+            <div id="register-form-container" style="display: none;">
                 <input type="text" id="reg-username" placeholder="Usuario">
                 <input type="text" id="reg-name" placeholder="Nombre">
                 <input type="text" id="reg-lastname" placeholder="Apellido">
-                <input type="email" id="reg-email" placeholder="Correo">
-                <input type="password" id="reg-password" placeholder="Contraseña">
+                <input type="email" id="reg-email" placeholder="Correo electrónico">
+                <input type="password" id="reg-password" placeholder="Crea una contraseña">
                 <button onclick="register()" class="btn-success">Crear Cuenta</button>
-                <p>¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)">Inicia sesión</span></p>
+                <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: #4f46e5; cursor: pointer; font-weight: bold;">Inicia sesión</span></p>
             </div>
         </div>
     </div>
 
-    <div id="app-container" class="app-container" style="display: none; padding-top: 60px;">
+    <div id="app-container" class="app-container" style="display: none; padding-top: 70px;">
         
         <div id="section-inicio">
             <header>
-                <div class="user-header">
-                    <span id="display-user"></span>
-                </div>
-                <h1 style="font-size: 1.5rem;">Resumen de Cuenta</h1>
+                <h1 style="font-size: 1.5rem; text-align: center;">Resumen de Cuenta</h1>
                 
                 <div class="budget-setup">
                     <input type="number" id="total-budget" placeholder="Presupuesto Total (BS)">
                     <input type="number" id="spending-limit" placeholder="Límite Alerta (BS)">
                     <div class="button-group">
                         <button onclick="setBudget()" class="btn-accent">Fijar</button>
-                        <button onclick="resetApp()" class="btn-reset">Resetear</button>
                     </div>
                 </div>
                 
@@ -124,10 +120,8 @@
                 <h1>Estadísticas</h1>
                 <p style="text-align: center; color: #94a3b8;">Resumen de tus movimientos</p>
             </header>
-            
             <div id="stats-panel"></div>
-            
-            <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
+            <button class="btn-primary" style="margin: 30px auto; display: block;" onclick="showSection('inicio')">Volver al Inicio</button>
         </div>
 
     </div>
@@ -138,7 +132,7 @@
             <h2 id="modal-title">Título</h2>
             <p id="modal-text"></p>
             <div class="modal-buttons">
-                <button id="modal-cancel-btn">Cancelar</button>
+                <button id="modal-cancel-btn" style="display: none;">Cancelar</button>
                 <button id="modal-ok-btn">Aceptar</button>
             </div>
         </div>
