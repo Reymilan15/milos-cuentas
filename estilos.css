@@ -1,3 +1,4 @@
+
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -10,7 +11,7 @@
     --sidebar-bg: #111827;
     --text-white: #f8fafc;
     --text-muted: #94a3b8;
-    --glass: rgba(30, 41, 59, 0.7);
+    --glass: rgba(30, 41, 59, 0.75);
     --border: rgba(255, 255, 255, 0.08);
 }
 
@@ -31,90 +32,87 @@ body {
     line-height: 1.5;
 }
 
-/* --- HEADER FIJO --- */
+/* --- BARRA SUPERIOR FIJA --- */
 #app-header-ui {
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    height: 70px; /* Altura fija para control */
-}
-
-.app-logo-main {
-    height: 35px;
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
-}
-
-/* --- CONTENEDOR PRINCIPAL --- */
-.app-container {
+    backdrop-filter: blur(10px);
+    position: fixed;
+    top: 0;
     width: 100%;
-    max-width: 500px;
-    padding: 90px 20px 40px; /* Espacio para el header fijo */
-    animation: fadeIn 0.5s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    height: 70px;
 }
 
-/* --- TARJETA DE SALDO (GLAMOUR) --- */
-.balance-card {
-    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
-    padding: 30px 20px;
-    border-radius: 28px;
-    text-align: center;
-    margin-bottom: 25px;
-    box-shadow: 0 20px 40px -10px rgba(79, 70, 229, 0.5);
-    position: relative;
-    overflow: hidden;
+/* LOGO STYLE */
+.app-logo-main {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
 }
 
-.balance-card h2 {
-    font-size: 2.6rem;
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin: 10px 0;
+.auth-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
 }
 
-.currency-selectors {
+/* --- PANTALLA DE AUTENTICACIÓN --- */
+.auth-container {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-top: 15px;
-}
-
-.currency-selectors span {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 6px 16px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: 0.3s;
-}
-
-.currency-selectors span:hover { background: white; color: var(--primary); }
-
-/* --- FORMULARIOS Y SECCIONES --- */
-.form-section {
-    background: var(--card-bg);
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
     padding: 20px;
-    border-radius: 24px;
-    margin-bottom: 20px;
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
 }
 
+.auth-box {
+    background: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: 28px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+#login-buttons, #register-buttons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-box h1 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* --- ELEMENTOS DE FORMULARIO --- */
 input, select {
     width: 100%;
-    padding: 14px;
+    padding: 14px 18px;
     margin: 8px 0;
     border-radius: 14px;
     border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.6);
     color: white;
     font-size: 1rem;
-    transition: 0.3s;
+    transition: all 0.3s ease;
 }
 
-input:focus {
+input:focus, select:focus {
     border-color: var(--primary);
     outline: none;
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
@@ -124,77 +122,112 @@ input:focus {
 button {
     width: 100%;
     padding: 14px;
+    margin-top: 8px;
     border-radius: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
     border: none;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 
 .btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--success); color: white; }
 .btn-accent { background: var(--accent); color: white; }
 .btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 .btn-logout { background: var(--danger); color: white; margin-top: auto; }
 
-button:active { transform: scale(0.96); }
+/* --- APP CONTAINER Y TARJETA DE SALDO --- */
+.app-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 90px 20px 40px;
+}
+
+.bcv-badge {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.balance-card {
+    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
+    padding: 35px 25px;
+    border-radius: 30px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+}
+
+.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; }
+
+.currency-selectors {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.currency-selectors span {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
 
 /* --- LISTA DE TRANSACCIONES --- */
+.form-section {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 24px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+}
+
 #transaction-list li {
     background: var(--card-bg);
-    padding: 16px;
-    border-radius: 18px;
-    margin-bottom: 10px;
+    padding: 18px;
+    border-radius: 20px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border: 1px solid var(--border);
 }
 
-/* --- FILTROS DE GRÁFICA --- */
-.btn-filter {
-    background: var(--card-bg);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    padding: 10px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    flex: 1;
-}
-
-.btn-filter.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-
 /* --- SIDEBAR --- */
 .sidebar {
     position: fixed; left: -300px; top: 0; width: 280px; height: 100%;
-    background: var(--sidebar-bg); z-index: 2000; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--sidebar-bg); z-index: 2000; transition: 0.4s;
     padding: 30px 20px; display: flex; flex-direction: column;
 }
 .sidebar.active { left: 0; }
 
-/* --- MODALES --- */
+.sidebar-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; display: none;
+}
+.sidebar-overlay.active { display: block; }
+
+/* --- MODAL (Mejorado para la pregunta del límite) --- */
 .modal-wrapper {
     position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
     display: none; justify-content: center; align-items: center;
-    z-index: 9999; backdrop-filter: blur(10px);
+    z-index: 9999; backdrop-filter: blur(12px);
 }
 
 .modal-content {
-    background: white; color: #1e293b;
-    padding: 30px; border-radius: 28px; width: 90%; max-width: 350px; text-align: center;
-}
-
-/* --- TABLA DE REGISTROS --- */
-table { width: 100%; border-spacing: 0; }
-th { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; padding: 10px; }
-td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    background: white; color: black;
+    padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
 }
 
 
