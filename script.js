@@ -12,17 +12,20 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASAS BCV ACTUALIZADAS CADA DÍA ---
+// --- 1. ACTUALIZACIÓN DIARIA BCV (REVISADO) ---
 async function fetchBCVRate() {
     try {
+        // Obtenemos la tasa oficial del día directamente
         const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
         const data = await response.json();
         if(data && data.monedas) {
             rates.USD = parseFloat(data.monedas.usd.valor);
             rates.EUR = parseFloat(data.monedas.eur.valor);
-            console.log("Tasas cargadas:", rates);
+            console.log("Tasas BCV del día actualizadas:", rates);
         }
-    } catch (e) { console.error("Error cargando tasas."); }
+    } catch (e) { 
+        console.error("Error al obtener tasas del BCV. Usando valores por defecto."); 
+    }
     updateBCVUI();
     renderAll();
 }
@@ -34,10 +37,10 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LA SOLUCIÓN AL PROBLEMA DEL DÓLAR/EURO ---
+// --- 2. LÓGICA DE CONVERSIÓN (REVISADO - DIVISIÓN MATEMÁTICA) ---
 function changeView(iso) {
-    currentView = iso; // Aquí guardamos si el usuario tocó BS, USD o EUR
-    renderAll();      // Volvemos a dibujar todo con el nuevo cálculo
+    currentView = iso; // 'VES', 'USD' o 'EUR'
+    renderAll(); 
 }
 
 function renderAll() {
@@ -51,10 +54,11 @@ function renderAll() {
     list.innerHTML = '';
     const hoy = new Date();
 
-    // Sumamos todos los gastos en Bolívares
+    // Siempre calculamos sobre la base de Bolívares
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
         const tDate = new Date(t.date);
+        
         if (tDate.toDateString() === hoy.toDateString()) totalHoy += t.valueVES;
         if (tDate.getMonth() === hoy.getMonth() && tDate.getFullYear() === hoy.getFullYear()) totalMes += t.valueVES;
 
@@ -65,43 +69,44 @@ function renderAll() {
         list.appendChild(li);
     });
 
-    // Saldo disponible en Bolívares
     const remainingVES = budgetVES - totalSpentVES;
     
-    // --- CÁLCULO DE CONVERSIÓN ---
-    let montoParaMostrar = remainingVES; // Por defecto son Bolívares
-
-    if (currentView === 'USD') {
-        montoParaMostrar = remainingVES / rates.USD; // DIVISIÓN: BS / TASA = DÓLARES
-    } else if (currentView === 'EUR') {
-        montoParaMostrar = remainingVES / rates.EUR; // DIVISIÓN: BS / TASA = EUROS
+    // OPERACIÓN MATEMÁTICA SEGÚN TASA BCV
+    let finalValue = remainingVES;
+    if (currentView === "USD") {
+        finalValue = remainingVES / rates.USD; // DIVISIÓN PARA DÓLAR
+    } else if (currentView === "EUR") {
+        finalValue = remainingVES / rates.EUR; // DIVISIÓN PARA EURO
     }
 
-    // Mostramos el resultado final corregido
-    display.innerText = `${fmt(montoParaMostrar)} ${currentView}`;
+    // Actualizamos el display principal
+    display.innerText = `${fmt(finalValue)} ${currentView === 'VES' ? 'BS' : currentView}`;
 
-    // Colores de alerta
-    if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-    else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
+    // Colores de alerta por presupuesto
+    if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) {
+        card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+    } else {
+        card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
+    }
     if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
 
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 3. AGREGAR GASTO (CONVIERTE A BS ANTES DE GUARDAR) ---
+// --- 3. REGISTRO DE GASTOS (REVISADO) ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Faltan datos", "🛒");
 
     let amountInVES = amount;
     if (currency === "USD") amountInVES = amount * rates.USD;
     else if (currency === "EUR") amountInVES = amount * rates.EUR;
     
-    const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
-    const balanceAtMoment = budgetVES - totalSpentSoFar;
+    const currentSpent = transactions.reduce((sum, t) => sum + t.valueVES, 0);
+    const balanceAtMoment = budgetVES - currentSpent;
 
     transactions.push({ 
         id: Date.now(), 
@@ -119,9 +124,7 @@ async function addTransaction() {
     await syncToCloud();
 }
 
-// --- 4. FUNCIONES DE SISTEMA (LOGIN, REGISTRO, SYNC, ETC) ---
-// (He dejado todas estas funciones intactas para que no pierdas nada)
-
+// --- 4. AUTENTICACIÓN (LOGIN Y REGISTRO - REVISADO) ---
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -141,8 +144,8 @@ async function login() {
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
             entrarALaApp();
-        } else { showModal("Error", "Datos incorrectos", "🚫"); }
-    } catch (e) { showModal("Error", "Error de servidor", "❌"); }
+        } else { showModal("Error", "Credenciales incorrectas", "🚫"); }
+    } catch (e) { showModal("Error", "Error de conexión con el servidor", "❌"); }
 }
 
 async function register() {
@@ -151,6 +154,7 @@ async function register() {
     const lastname = document.getElementById('reg-lastname').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
+    if (!username || !password || !email) return showModal("Error", "Datos obligatorios faltantes", "❌");
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -158,10 +162,13 @@ async function register() {
             body: JSON.stringify({ username, password, name, lastname, email })
         });
         if (response.ok) {
-            showModal("Éxito", "Cuenta creada", "🎉");
+            await showModal("Éxito", "Cuenta creada correctamente", "🎉");
             window.toggleAuth(false);
+        } else {
+            const data = await response.json();
+            showModal("Error", data.error || "No se pudo registrar", "❌");
         }
-    } catch (e) { showModal("Error", "Error de red", "📡"); }
+    } catch (e) { showModal("Error", "Error de servidor", "📡"); }
 }
 
 function entrarALaApp() {
@@ -175,6 +182,29 @@ function entrarALaApp() {
     fetchBCVRate(); 
 }
 
+// --- 5. FUNCIONES DE APOYO (HISTORIAL, SYNC, ETC) ---
+function renderFullHistory() {
+    const tableBody = document.getElementById('full-history-body');
+    if(!tableBody) return;
+    tableBody.innerHTML = '';
+    [...transactions].reverse().forEach(t => {
+        const d = new Date(t.date);
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid #334155";
+        tr.innerHTML = `<td style="padding:10px;">${d.toLocaleDateString()}<br><small>${d.getHours()}:${d.getMinutes()}</small></td>
+            <td style="padding:10px;">${t.desc}</td>
+            <td style="padding:10px; color:#f87171;">-${fmt(t.valueVES)} BS</td>
+            <td style="padding:10px; color:#4ade80;">${fmt(t.balanceAtMoment || 0)} BS</td>`;
+        tableBody.appendChild(tr);
+    });
+}
+
+function updateStatsUI(hoy, mes) {
+    const p = document.getElementById('stats-panel');
+    if(p) p.innerHTML = `<div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px;">GASTOS HOY: ${fmt(hoy)} BS</div>
+                         <div style="padding:15px; background:#1e293b; border-radius:12px;">GASTOS MES: ${fmt(mes)} BS</div>`;
+}
+
 async function syncToCloud() {
     if (!currentUser) return;
     try {
@@ -186,14 +216,14 @@ async function syncToCloud() {
                 spendingLimit: spendingLimitVES, transactions: transactions
             })
         });
-    } catch (e) { console.error("Sync Error"); }
+    } catch (e) { console.error("Error al sincronizar"); }
 }
 
 async function setBudget() { 
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
     renderAll(); await syncToCloud(); 
-    showModal("Éxito", "Guardado", "✅");
+    showModal("Éxito", "Presupuesto guardado", "✅");
 }
 
 function showSection(sec) {
@@ -212,31 +242,10 @@ function toggleMenu() {
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
 async function deleteTransaction(id) { 
-    if(await showModal("Eliminar", "¿Borrar?", "🗑️", true)) { 
+    if(await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) { 
         transactions = transactions.filter(t => t.id !== id); 
         renderAll(); await syncToCloud(); 
     } 
-}
-
-function renderFullHistory() {
-    const tableBody = document.getElementById('full-history-body');
-    if(!tableBody) return;
-    tableBody.innerHTML = '';
-    [...transactions].reverse().forEach(t => {
-        const d = new Date(t.date);
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = "1px solid #334155";
-        tr.innerHTML = `<td style="padding:10px;">${d.toLocaleDateString()}</td>
-            <td style="padding:10px;">${t.desc}</td>
-            <td style="padding:10px; color:#f87171;">-${fmt(t.valueVES)} BS</td>
-            <td style="padding:10px; color:#4ade80;">${fmt(t.balanceAtMoment || 0)} BS</td>`;
-        tableBody.appendChild(tr);
-    });
-}
-
-function updateStatsUI(hoy, mes) {
-    const p = document.getElementById('stats-panel');
-    if(p) p.innerHTML = `<div style="padding:10px;">Hoy: ${fmt(hoy)} BS<br>Mes: ${fmt(mes)} BS</div>`;
 }
 
 function showModal(title, message, icon, isConfirm = false) {
