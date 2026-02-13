@@ -1,4 +1,3 @@
-
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -9,12 +8,12 @@ let currentView = 'VES';
 let myChart = null;
 let currentChartFilter = '7days';
 
-// Persistencia de sesión
+// Recuperar sesión al cargar
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASA BCV (DOLAR API) ---
+// --- 1. TASA BCV ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
@@ -24,51 +23,62 @@ async function fetchBCVRate() {
             rates.EUR = rates.USD * 1.08; 
         }
     } catch (e) { 
-        console.error("Error tasa BCV, usando default");
         rates.USD = 36.50; 
     }
     updateBCVUI();
-    renderAll();
+    if(currentUser) renderAll();
 }
 
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
-    if (rateDisplay) {
-        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span>`;
-    }
+    if (rateDisplay) rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span>`;
 }
 
-// --- 2. LÓGICA DE GASTOS ---
+// --- 2. NAVEGACIÓN Y MENÚ (ESTO ES LO QUE NO SALÍA) ---
+function toggleMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+function showSection(sec) {
+    // Control de visibilidad de capas
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    
+    // Carga de datos según sección
+    if(sec === 'stats') renderChart();
+    if(sec === 'registros') renderFullHistory();
+    
+    // Cerrar menú lateral al navegar
+    const sidebar = document.getElementById('sidebar');
+    if(sidebar.classList.contains('active')) toggleMenu();
+}
+
+// --- 3. GESTIÓN DE GASTOS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const curr = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) {
-        return showModal("Error", "Por favor ingresa descripción y monto", "🛒");
-    }
+    if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
-    const totalGastadoActual = transactions.reduce((s, x) => s + x.valueVES, 0);
-    const saldoActual = budgetVES - totalGastadoActual;
+    const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
+    const saldoActual = budgetVES - totalSpent;
     const nuevoSaldo = saldoActual - valVES;
 
     if (spendingLimitVES > 0 && nuevoSaldo <= spendingLimitVES) {
-        const mensaje = nuevoSaldo < 0 
-            ? `¡Cuidado! Este gasto te dejará en DEUDA (${fmt(nuevoSaldo)} BS). ¿Deseas continuar?`
-            : `Estás por alcanzar tu límite. Tu saldo quedará en ${fmt(nuevoSaldo)} BS. ¿Deseas continuar?`;
-        
-        const confirmar = await showModal("Límite de Gasto", mensaje, "⚠️", true);
+        const msg = nuevoSaldo < 0 ? `Quedarás en deuda (${fmt(nuevoSaldo)} BS)` : `Límite cerca (${fmt(nuevoSaldo)} BS)`;
+        const confirmar = await showModal("Atención", msg, "⚠️", true);
         if (!confirmar) return;
     }
 
     transactions.push({ 
-        id: Date.now(), 
-        date: new Date().toISOString(), 
-        desc, 
-        originalAmount: amount, 
-        originalCurrency: curr, 
-        valueVES: valVES, 
+        id: Date.now(), date: new Date().toISOString(), desc, 
+        originalAmount: amount, originalCurrency: curr, valueVES: valVES, 
         balanceAtMoment: saldoActual 
     });
 
@@ -78,12 +88,10 @@ async function addTransaction() {
     document.getElementById('amount').value = '';
 }
 
-// --- 3. RENDERIZADO ---
-function changeView(iso) { currentView = iso; renderAll(); }
-
 function renderAll() {
-    const totalSpentVES = transactions.reduce((s, x) => s + x.valueVES, 0);
-    const remainingVES = budgetVES - totalSpentVES;
+    if(!currentUser) return;
+    const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
+    const remaining = budgetVES - totalSpent;
 
     const list = document.getElementById('transaction-list');
     if(list) {
@@ -101,82 +109,13 @@ function renderAll() {
     }
 
     const display = document.getElementById('remaining-display');
-    const card = document.getElementById('balance-card');
     if(display) {
-        let finalValue = (currentView === "USD") ? remainingVES / rates.USD : (currentView === "EUR") ? remainingVES / rates.EUR : remainingVES;
-        display.innerText = `${fmt(finalValue)} ${currentView}`;
-    }
-
-    if(card) {
-        if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #ef4444, #991b1b)";
-        else if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-        else card.style.background = "linear-gradient(135deg, var(--primary-dark), #7c3aed)";
+        let val = (currentView === "USD") ? remaining / rates.USD : (currentView === "EUR") ? remaining / rates.EUR : remaining;
+        display.innerText = `${fmt(val)} ${currentView}`;
     }
 }
 
-// --- 4. ESTADÍSTICAS ---
-function renderChart() {
-    const canvas = document.getElementById('spendingChart');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let labels = [], dataValues = [];
-    const hoy = new Date();
-
-    if (currentChartFilter === '7days') {
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(); d.setDate(hoy.getDate() - i);
-            const dateStr = d.toLocaleDateString();
-            labels.push(dateStr.split('/')[0]); 
-            dataValues.push(transactions.filter(t => new Date(t.date).toLocaleDateString() === dateStr).reduce((s, x) => s + x.valueVES, 0));
-        }
-    } else if (currentChartFilter === 'month') {
-        labels = ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
-        dataValues = [0, 0, 0, 0];
-        transactions.forEach(t => {
-            const d = new Date(t.date);
-            if (d.getMonth() === hoy.getMonth()) {
-                const day = d.getDate();
-                if (day <= 7) dataValues[0] += t.valueVES;
-                else if (day <= 14) dataValues[1] += t.valueVES;
-                else if (day <= 21) dataValues[2] += t.valueVES;
-                else dataValues[3] += t.valueVES;
-            }
-        });
-    }
-
-    if (myChart) myChart.destroy();
-    myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{ label: 'Gastos (BS)', data: dataValues, borderColor: '#6366f1', tension: 0.4, fill: true }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-    });
-}
-
-function updateChartFilter(filter) {
-    currentChartFilter = filter;
-    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-    document.getElementById('btn-' + filter).classList.add('active');
-    renderChart();
-}
-
-// --- 5. NAVEGACIÓN Y MENÚ ---
-function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
-}
-
-function showSection(sec) {
-    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
-    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
-    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'stats') renderChart();
-    if(sec === 'registros') renderFullHistory();
-    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-}
-
+// --- 4. HISTORIAL Y ESTADÍSTICAS ---
 function renderFullHistory() {
     const body = document.getElementById('full-history-body'); 
     if(!body) return;
@@ -192,44 +131,32 @@ function renderFullHistory() {
     });
 }
 
-// --- 6. FUNCIONES DE APOYO (MODAL, RESET, DELETE) ---
-function showModal(title, message, icon, isConfirm = false) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-modal');
-        document.getElementById('modal-title').innerText = title;
-        document.getElementById('modal-text').innerText = message;
-        document.getElementById('modal-icon').innerText = icon;
-        const cancelBtn = document.getElementById('modal-cancel-btn');
-        cancelBtn.style.display = isConfirm ? "block" : "none";
-        modal.style.display = "flex";
-        document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; resolve(true); };
-        cancelBtn.onclick = () => { modal.style.display = "none"; resolve(false); };
+function renderChart() {
+    const canvas = document.getElementById('spendingChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let labels = [], dataValues = [];
+    const hoy = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(hoy.getDate() - i);
+        const dateStr = d.toLocaleDateString();
+        labels.push(dateStr.split('/')[0]); 
+        dataValues.push(transactions.filter(t => new Date(t.date).toLocaleDateString() === dateStr).reduce((s, x) => s + x.valueVES, 0));
+    }
+
+    if (myChart) myChart.destroy();
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{ label: 'Gastos (BS)', data: dataValues, borderColor: '#6366f1', tension: 0.4, fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
     });
 }
 
-async function deleteTransaction(id) {
-    const confirmar = await showModal("Eliminar", "¿Borrar este registro?", "🗑️", true);
-    if (confirmar) {
-        transactions = transactions.filter(t => t.id !== id);
-        renderAll();
-        await syncToCloud();
-    }
-}
-
-async function resetApp() {
-    const confirmar = await showModal("Resetear", "¿Borrar todos tus datos?", "🗑️", true);
-    if (confirmar) {
-        transactions = [];
-        budgetVES = 0;
-        spendingLimitVES = 0;
-        document.getElementById('total-budget').value = '';
-        document.getElementById('spending-limit').value = '';
-        renderAll();
-        await syncToCloud();
-    }
-}
-
-// --- 7. AUTH Y SYNC ---
+// --- 5. SISTEMA DE SESIÓN ---
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -244,35 +171,22 @@ async function login() {
             localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
             entrarALaApp();
         } else showModal("Error", "Credenciales incorrectas", "🚫");
-    } catch (e) { showModal("Error", "Error de conexión", "🌐"); }
-}
-
-async function register() {
-    const username = document.getElementById('reg-username').value;
-    const name = document.getElementById('reg-name').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    try {
-        const response = await fetch(`${API_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, name, email, password })
-        });
-        if (response.ok) { showModal("Éxito", "Cuenta creada", "🎉"); toggleAuth(false); }
-        else showModal("Error", "El usuario ya existe", "🚫");
-    } catch (e) { showModal("Error", "Error de servidor", "🌐"); }
+    } catch (e) { showModal("Error", "Sin conexión con el servidor", "🌐"); }
 }
 
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
+    
     transactions = currentUser.transactions || [];
     budgetVES = currentUser.budget || 0;
     spendingLimitVES = currentUser.spendingLimit || 0;
+    
     document.getElementById('side-username').innerText = currentUser.name || "Usuario";
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
+    
     fetchBCVRate();
 }
 
@@ -283,31 +197,61 @@ async function syncToCloud() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: currentUser.username,
-                budget: budgetVES,
-                spendingLimit: spendingLimitVES,
-                transactions: transactions
+                username: currentUser.username, budget: budgetVES,
+                spendingLimit: spendingLimitVES, transactions: transactions
             })
         });
-    } catch (e) { console.error("Error sincronizando"); }
+    } catch (e) {}
+}
+
+// --- 6. ACCIONES DE USUARIO ---
+async function resetApp() {
+    const confirmar = await showModal("Resetear", "¿Borrar todos los datos?", "🗑️", true);
+    if (confirmar) {
+        transactions = []; budgetVES = 0; spendingLimitVES = 0;
+        document.getElementById('total-budget').value = '';
+        document.getElementById('spending-limit').value = '';
+        renderAll(); await syncToCloud();
+    }
+}
+
+async function deleteTransaction(id) {
+    const confirmar = await showModal("Borrar", "¿Eliminar este gasto?", "🗑️", true);
+    if (confirmar) {
+        transactions = transactions.filter(t => t.id !== id);
+        renderAll(); await syncToCloud();
+    }
 }
 
 async function setBudget() {
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
-    renderAll();
-    await syncToCloud();
-    showModal("Éxito", "Presupuesto actualizado", "✅");
+    renderAll(); await syncToCloud();
+    showModal("Éxito", "Presupuesto guardado", "✅");
 }
 
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
+function showModal(title, msg, icon, isConfirm = false) {
+    return new Promise((res) => {
+        const m = document.getElementById('custom-modal');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-text').innerText = msg;
+        document.getElementById('modal-icon').innerText = icon;
+        document.getElementById('modal-cancel-btn').style.display = isConfirm ? "block" : "none";
+        m.style.display = "flex";
+        document.getElementById('modal-ok-btn').onclick = () => { m.style.display = "none"; res(true); };
+        document.getElementById('modal-cancel-btn').onclick = () => { m.style.display = "none"; res(false); };
+    });
+}
+
+function changeView(iso) { currentView = iso; renderAll(); }
+
 function toggleAuth(isReg) {
     document.getElementById('login-form-container').style.display = isReg ? 'none' : 'block';
     document.getElementById('register-form-container').style.display = isReg ? 'block' : 'none';
-    document.getElementById('auth-title').innerText = isReg ? 'Crear Cuenta' : 'Iniciar Sesión';
 }
 
+function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
+
 window.onload = () => { if (currentUser) entrarALaApp(); };
-
-
