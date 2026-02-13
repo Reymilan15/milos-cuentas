@@ -12,7 +12,7 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. GESTIÓN DE TASAS (AUTOMÁTICA Y MANUAL) ---
+// --- 1. GESTIÓN DE TASAS ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
@@ -21,7 +21,7 @@ async function fetchBCVRate() {
             rates.USD = parseFloat(data.monedas.usd.valor);
             rates.EUR = parseFloat(data.monedas.eur.valor);
         }
-    } catch (e) { console.error("Error tasas automáticas."); }
+    } catch (e) { console.error("Error cargando tasas automáticas."); }
     updateBCVUI();
     renderAll();
 }
@@ -30,7 +30,7 @@ function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
         rateDisplay.style.cursor = "pointer";
-        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span> <span>💶 € <b>${fmt(rates.EUR)}</b></span>`;
+        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span> <span>| 💶 € <b>${fmt(rates.EUR)}</b></span>`;
         
         rateDisplay.onclick = async () => {
             const opcion = prompt("¿Qué tasa deseas editar?\n1: Dólar ($)\n2: Euro (€)");
@@ -47,24 +47,11 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. AUTENTICACIÓN ---
-window.toggleAuth = function(showRegister) {
-    const loginForm = document.getElementById('login-form-container');
-    const registerForm = document.getElementById('register-form-container');
-    const authTitle = document.getElementById('auth-title');
-    if (showRegister) {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'flex';
-        registerForm.style.flexDirection = 'column';
-        registerForm.style.gap = '15px';
-        authTitle.innerText = "Crear Cuenta Nueva";
-    } else {
-        registerForm.style.display = 'none';
-        loginForm.style.display = 'flex';
-        loginForm.style.flexDirection = 'column';
-        loginForm.style.gap = '15px';
-        authTitle.innerText = "Iniciar Sesión";
-    }
+// --- 2. AUTENTICACIÓN Y NAVEGACIÓN ---
+window.toggleAuth = (reg) => {
+    document.getElementById('login-form-container').style.display = reg ? 'none' : 'flex';
+    document.getElementById('register-form-container').style.display = reg ? 'flex' : 'none';
+    document.getElementById('auth-title').innerText = reg ? "Crear Cuenta" : "Iniciar Sesión";
 };
 
 async function login() {
@@ -87,7 +74,7 @@ async function login() {
             userLastName = user.lastname || "";
             entrarALaApp();
         } else { showModal("Error", "Datos incorrectos", "🚫"); }
-    } catch (e) { showModal("Error", "Error de red", "❌"); }
+    } catch (e) { showModal("Error", "Error de conexión", "❌"); }
 }
 
 async function register() {
@@ -96,7 +83,7 @@ async function register() {
     const lastname = document.getElementById('reg-lastname').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-    if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
+    if (!username || !password || !email) return showModal("Error", "Faltan campos obligatorios", "❌");
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -104,30 +91,54 @@ async function register() {
             body: JSON.stringify({ username, password, name, lastname, email })
         });
         if (response.ok) {
-            await showModal("Éxito", "Cuenta creada", "🎉");
+            await showModal("Éxito", "Cuenta creada correctamente", "🎉");
             window.toggleAuth(false);
         } else {
             const data = await response.json();
             showModal("Error", data.error, "❌");
         }
-    } catch (e) { showModal("Error", "Error de red", "📡"); }
+    } catch (e) { showModal("Error", "Error de servidor", "📡"); }
 }
 
-// --- 3. LÓGICA DE GASTOS ---
+function entrarALaApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    document.getElementById('app-header-ui').style.display = 'flex';
+    document.getElementById('total-budget').value = budgetVES || "";
+    document.getElementById('spending-limit').value = spendingLimitVES || "";
+    document.getElementById('side-username').innerText = userName;
+    document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
+    fetchBCVRate(); 
+}
+
+function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+
+function showSection(sec) {
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    if(sec === 'registros') renderFullHistory();
+    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
+}
+
+// --- 3. LÓGICA DE TRANSACCIONES Y CONVERSIÓN ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return showModal("Error", "Datos vacíos", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Ingresa descripción y monto", "🛒");
 
-    // Conversión real a Bolívares
+    // CONVERSIÓN REAL: Se multiplica el monto por la tasa si no es BS
     let amountInVES = amount;
     if (currency === "USD") amountInVES = amount * rates.USD;
     else if (currency === "EUR") amountInVES = amount * rates.EUR;
     
-    const currentSpent = transactions.reduce((s, t) => s + t.valueVES, 0);
-    const balanceNow = budgetVES - currentSpent;
+    const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
+    const balanceAtMoment = budgetVES - totalSpentSoFar;
 
     transactions.push({ 
         id: Date.now(), 
@@ -136,7 +147,7 @@ async function addTransaction() {
         originalAmount: amount, 
         originalCurrency: currency, 
         valueVES: amountInVES,
-        balanceAtMoment: balanceNow 
+        balanceAtMoment: balanceAtMoment 
     });
 
     document.getElementById('desc').value = '';
@@ -152,18 +163,13 @@ function renderAll() {
     
     let totalSpentVES = 0, totalHoy = 0, totalMes = 0;
     list.innerHTML = '';
-
     const hoy = new Date();
-    const isToday = (d) => new Date(d).toDateString() === hoy.toDateString();
-    const isThisMonth = (d) => {
-        const dt = new Date(d);
-        return dt.getMonth() === hoy.getMonth() && dt.getFullYear() === hoy.getFullYear();
-    };
 
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
-        if (isToday(t.date)) totalHoy += t.valueVES;
-        if (isThisMonth(t.date)) totalMes += t.valueVES;
+        const tDate = new Date(t.date);
+        if (tDate.toDateString() === hoy.toDateString()) totalHoy += t.valueVES;
+        if (tDate.getMonth() === hoy.getMonth() && tDate.getFullYear() === hoy.getFullYear()) totalMes += t.valueVES;
 
         const li = document.createElement('li');
         li.innerHTML = `<div><b>${t.desc}</b><br><small>${fmt(t.originalAmount)} ${t.originalCurrency}</small></div>
@@ -174,20 +180,22 @@ function renderAll() {
 
     const remainingVES = budgetVES - totalSpentVES;
     
-    // Alertas visuales
+    // --- CONVERSIÓN DE VISTA PRINCIPAL ---
+    let convertedValue = remainingVES;
+    if (currentView === "USD") convertedValue = remainingVES / rates.USD;
+    else if (currentView === "EUR") convertedValue = remainingVES / rates.EUR;
+
+    display.innerText = `${fmt(convertedValue)} ${currentView}`;
+
+    // Alertas de color
     if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
     else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
 
-    let converted = remainingVES;
-    if (currentView === "USD") converted = remainingVES / rates.USD;
-    if (currentView === "EUR") converted = remainingVES / rates.EUR;
-
-    display.innerText = `${fmt(converted)} ${currentView}`;
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 4. VISTAS Y NAVEGACIÓN ---
+// --- 4. REPORTES Y MODALES ---
 function renderFullHistory() {
     const tableBody = document.getElementById('full-history-body');
     if(!tableBody) return;
@@ -195,7 +203,7 @@ function renderFullHistory() {
     [...transactions].reverse().forEach(t => {
         const d = new Date(t.date);
         const fecha = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
-        const hora = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        const hora = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
         const tr = document.createElement('tr');
         tr.style.borderBottom = "1px solid #334155";
         tr.innerHTML = `
@@ -208,42 +216,35 @@ function renderFullHistory() {
     });
 }
 
-function showSection(sec) {
-    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
-    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
-    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'registros') renderFullHistory();
-    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-}
-
 function updateStatsUI(hoy, mes) {
     const p = document.getElementById('stats-panel');
     if(p) {
         p.innerHTML = `
-            <div style="padding:15px; background:var(--card-bg); border-radius:12px; margin-bottom:15px; border-left: 4px solid #4f46e5;">
-                <p style="color:#94a3b8; font-size:0.8rem;">GASTOS DE HOY</p>
-                <h2 style="margin:5px 0;">${fmt(hoy)} BS</h2>
+            <div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:15px; border-left: 4px solid #4f46e5;">
+                <p style="color:#94a3b8; font-size:0.8rem;">GASTOS HOY (BS)</p>
+                <h2 style="margin:5px 0;">${fmt(hoy)}</h2>
             </div>
-            <div style="padding:15px; background:var(--card-bg); border-radius:12px; border-left: 4px solid #10b981;">
-                <p style="color:#94a3b8; font-size:0.8rem;">GASTOS DEL MES</p>
-                <h2 style="margin:5px 0;">${fmt(mes)} BS</h2>
-            </div>
-        `;
+            <div style="padding:15px; background:#1e293b; border-radius:12px; border-left: 4px solid #10b981;">
+                <p style="color:#94a3b8; font-size:0.8rem;">GASTOS MES (BS)</p>
+                <h2 style="margin:5px 0;">${fmt(mes)}</h2>
+            </div>`;
     }
 }
 
-// --- 5. FUNCIONES DE APOYO ---
-function entrarALaApp() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-container').style.display = 'block';
-    document.getElementById('app-header-ui').style.display = 'flex';
-    document.getElementById('total-budget').value = budgetVES || "";
-    document.getElementById('spending-limit').value = spendingLimitVES || "";
-    document.getElementById('side-username').innerText = userName;
-    document.getElementById('side-fullname').innerText = `${userName} ${userLastName}`;
-    fetchBCVRate(); 
+function showModal(title, message, icon, isConfirm = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-modal');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-text').innerText = message;
+        document.getElementById('modal-icon').innerText = icon;
+        document.getElementById('modal-cancel-btn').style.display = isConfirm ? "block" : "none";
+        modal.style.display = "flex";
+        document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; resolve(true); };
+        document.getElementById('modal-cancel-btn').onclick = () => { modal.style.display = "none"; resolve(false); };
+    });
 }
 
+// --- 5. PERSISTENCIA Y CONFIGURACIÓN ---
 async function syncToCloud() {
     if (!currentUser) return;
     try {
@@ -260,52 +261,33 @@ async function syncToCloud() {
     } catch (e) { console.error("Error de sincronización"); }
 }
 
-function changeView(iso) { currentView = iso; renderAll(); }
-function toggleMenu() { 
-    document.getElementById('sidebar').classList.toggle('active'); 
-    document.getElementById('sidebar-overlay').classList.toggle('active'); 
+async function setBudget() {
+    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
+    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
+    renderAll();
+    await syncToCloud();
+    showModal("Éxito", "Configuración guardada", "✅");
 }
+
+function changeView(iso) { currentView = iso; renderAll(); }
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
-async function setBudget() { 
-    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
-    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
-    renderAll(); await syncToCloud(); 
-    showModal("Éxito", "Presupuesto actualizado", "✅");
+async function deleteTransaction(id) {
+    if(await showModal("Eliminar", "¿Borrar este registro?", "🗑️", true)) {
+        transactions = transactions.filter(t => t.id !== id);
+        renderAll(); await syncToCloud();
+    }
 }
 
-async function deleteTransaction(id) { 
-    if(await showModal("Eliminar", "¿Borrar este gasto?", "🗑️", true)) { 
-        transactions = transactions.filter(t => t.id !== id); 
-        renderAll(); await syncToCloud(); 
-    } 
-}
-
-async function resetApp() { 
-    if(await showModal("Borrar Todo", "¿Deseas limpiar todo el historial y presupuesto?", "🗑️", true)) { 
-        transactions = []; 
-        budgetVES = 0; 
-        spendingLimitVES = 0;
+async function resetApp() {
+    if(await showModal("Reiniciar", "¿Borrar TODO el historial?", "⚠️", true)) {
+        transactions = []; budgetVES = 0; spendingLimitVES = 0;
         document.getElementById('total-budget').value = "";
         document.getElementById('spending-limit').value = "";
-        renderAll(); await syncToCloud(); 
-    } 
-}
-
-function showModal(title, message, icon, isConfirm = false) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-modal');
-        document.getElementById('modal-title').innerText = title;
-        document.getElementById('modal-text').innerText = message;
-        document.getElementById('modal-icon').innerText = icon;
-        document.getElementById('modal-cancel-btn').style.display = isConfirm ? "block" : "none";
-        modal.style.display = "flex";
-        document.getElementById('modal-ok-btn').onclick = () => { modal.style.display = "none"; resolve(true); };
-        document.getElementById('modal-cancel-btn').onclick = () => { modal.style.display = "none"; resolve(false); };
-    });
+        renderAll(); await syncToCloud();
+    }
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
-
 
 
