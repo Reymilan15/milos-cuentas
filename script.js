@@ -12,7 +12,7 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. TASA BCV (Sincronización Real) ---
+// --- 1. TASA BCV ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
@@ -38,12 +38,9 @@ async function fetchBCVRate() {
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
-        rateDisplay.innerHTML = `
-            <span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span>
-            <span>💶 € <b>${fmt(rates.EUR)}</b></span>
-        `;
+        rateDisplay.innerHTML = `<span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span><span>| 💶 € <b>${fmt(rates.EUR)}</b></span>`;
         rateDisplay.onclick = async () => {
-            const opcion = prompt("¿Qué tasa editar?\n1: USD\n2: EUR");
+            const opcion = prompt("1: USD, 2: EUR");
             if(opcion === "1") {
                 const m = prompt("Nuevo USD:", rates.USD);
                 if(m && !isNaN(m)) rates.USD = parseFloat(m);
@@ -56,25 +53,29 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. AUTENTICACIÓN (CORREGIDA PARA NO ENCIMARSE) ---
+// --- 2. AUTENTICACIÓN (CORREGIDA PARA SEPARACIÓN TOTAL) ---
 window.toggleAuth = function(showRegister) {
-    const loginForm = document.getElementById('login-buttons');
-    const registerForm = document.getElementById('register-buttons');
+    const loginForm = document.getElementById('login-form-container');
+    const registerForm = document.getElementById('register-form-container');
     const authTitle = document.getElementById('auth-title');
 
-    // Ocultamos ambos para limpiar el espacio
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'none';
+    // Ocultar TODO antes de mostrar lo nuevo
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'none';
 
     if (showRegister) {
-        registerForm.style.display = 'flex';
-        registerForm.style.flexDirection = 'column';
-        registerForm.style.gap = '15px';
+        if (registerForm) {
+            registerForm.style.display = 'flex';
+            registerForm.style.flexDirection = 'column';
+            registerForm.style.gap = '15px';
+        }
         if (authTitle) authTitle.innerText = "Crear Cuenta Nueva";
     } else {
-        loginForm.style.display = 'flex';
-        loginForm.style.flexDirection = 'column';
-        loginForm.style.gap = '15px';
+        if (loginForm) {
+            loginForm.style.display = 'flex';
+            loginForm.style.flexDirection = 'column';
+            loginForm.style.gap = '15px';
+        }
         if (authTitle) authTitle.innerText = "Iniciar Sesión";
     }
 };
@@ -101,7 +102,6 @@ async function register() {
     const lastname = document.getElementById('reg-lastname').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-
     if (!username || !password || !email) return showModal("Error", "Campos incompletos", "❌");
 
     try {
@@ -123,14 +123,12 @@ async function register() {
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
-
     try {
         const response = await fetch(`${API_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ identifier, password })
         });
-
         if (response.ok) {
             const user = await response.json();
             currentUser = user;
@@ -141,13 +139,11 @@ async function login() {
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
             entrarALaApp();
-        } else {
-            showModal("Error", "Acceso denegado.", "🚫");
-        }
-    } catch (e) { showModal("Error", "Problema de conexión.", "❌"); }
+        } else { showModal("Error", "Acceso denegado.", "🚫"); }
+    } catch (e) { showModal("Error", "Error de red.", "❌"); }
 }
 
-// --- 3. NAVEGACIÓN Y CIERRE (OCULTA EL MENÚ AL SALIR) ---
+// --- 3. NAVEGACIÓN ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
@@ -156,7 +152,6 @@ function entrarALaApp() {
     
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
-    
     updateUserUI();
     fetchBCVRate(); 
     showSection('inicio');
@@ -164,7 +159,6 @@ function entrarALaApp() {
 
 function logout() {
     localStorage.removeItem('milCuentas_session');
-    // Ocultamos todo antes de recargar para evitar flashes visuales
     document.getElementById('app-container').style.display = 'none';
     const headerUI = document.getElementById('app-header-ui');
     if(headerUI) headerUI.style.display = 'none';
@@ -176,7 +170,6 @@ async function showSection(section) {
     document.getElementById('sidebar-overlay').classList.remove('active');
     const secInicio = document.getElementById('section-inicio');
     const secStats = document.getElementById('section-stats');
-
     if (section === 'inicio') {
         secInicio.style.display = 'block';
         secStats.style.display = 'none';
@@ -185,37 +178,17 @@ async function showSection(section) {
         secInicio.style.display = 'none';
         secStats.style.display = 'block';
         renderAll();
-    } else if (section === 'edit') {
-        const newName = prompt("Nuevo Nombre:", userName);
-        if (newName) {
-            userName = newName;
-            userLastName = prompt("Nuevo Apellido:", userLastName) || userLastName;
-            updateUserUI(); syncToCloud(); 
-        }
     }
 }
 
 // --- 4. GESTIÓN DE DATOS ---
-async function setBudget() {
-    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
-    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
-    renderAll();
-    await syncToCloud(); 
-    showModal("Éxito", "Presupuesto actualizado.", "⚙️");
-}
-
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
-
-    if (!desc || isNaN(amount)) return showModal("Incompleto", "Datos inválidos.", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Datos vacíos.", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
-    const totalSpentSoFar = transactions.reduce((sum, t) => sum + t.valueVES, 0);
-
-    if (budgetVES > 0 && amountInVES > (budgetVES - totalSpentSoFar)) return showModal("Sin Fondos", "Saldo insuficiente.", "🚫");
-
     transactions.push({ id: Date.now(), date: new Date().toISOString(), desc, originalAmount: amount, originalCurrency: currency, valueVES: amountInVES });
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
@@ -231,7 +204,6 @@ function renderAll() {
 
     let totalSpentVES = 0, totalHoy = 0, totalMes = 0;
     list.innerHTML = '';
-
     const isToday = (d) => new Date(d).toDateString() === new Date().toDateString();
     const isThisMonth = (d) => new Date(d).getMonth() === new Date().getMonth();
 
@@ -239,7 +211,6 @@ function renderAll() {
         totalSpentVES += t.valueVES;
         if (isToday(t.date)) totalHoy += t.valueVES;
         if (isThisMonth(t.date)) totalMes += t.valueVES;
-
         const li = document.createElement('li');
         li.innerHTML = `<div><b>${t.desc}</b><br><span>${fmt(t.originalAmount)} ${t.originalCurrency}</span></div>
             <div style="text-align: right;"><strong>-${fmt(t.valueVES)} BS</strong><br>
@@ -252,8 +223,7 @@ function renderAll() {
     display.innerText = `${fmt(converted)} ${currentView}`;
     
     if (budgetVES > 0 && card) {
-        if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
-        else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
+        card.style.background = remainingVES <= 0 ? "linear-gradient(135deg, #dc2626, #991b1b)" : "linear-gradient(135deg, #4f46e5, #7c3aed)";
     }
     updateStatsUI(totalHoy, totalMes);
 }
@@ -264,12 +234,10 @@ function updateStatsUI(hoy, mes) {
     statsDiv.innerHTML = `
         <div class="stats-container" style="display: grid; gap: 15px; margin-top: 20px;">
             <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--primary);">
-                <small style="color: var(--text-muted);">Hoy</small>
-                <h2 style="margin: 5px 0;">${fmt(hoy)} BS</h2>
+                <small>Hoy</small><h2>${fmt(hoy)} BS</h2>
             </div>
             <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid #22c55e;">
-                <small style="color: var(--text-muted);">Este Mes</small>
-                <h2 style="margin: 5px 0;">${fmt(mes)} BS</h2>
+                <small>Este Mes</small><h2>${fmt(mes)} BS</h2>
             </div>
         </div>`;
 }
@@ -293,8 +261,6 @@ async function deleteTransaction(id) {
     }
 }
 
-function changeView(iso) { currentView = iso; renderAll(); }
-
 function showModal(title, message, icon = "⚠️", isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -309,24 +275,16 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
     });
 }
 
-// --- AL CARGAR LA PÁGINA (ESTADO INICIAL LIMPIO) ---
 window.onload = () => {
-    const loginScreen = document.getElementById('login-screen');
-    const appContainer = document.getElementById('app-container');
-    const headerUI = document.getElementById('app-header-ui');
-
-    if (currentUser) {
-        entrarALaApp();
-    } else {
-        // Aseguramos que todo lo de la App esté oculto al inicio
-        if(appContainer) appContainer.style.display = 'none';
-        if(headerUI) headerUI.style.display = 'none';
-        if(loginScreen) {
-            loginScreen.style.display = 'flex';
-            window.toggleAuth(false); // Por defecto muestra solo el Login
-        }
+    if (currentUser) entrarALaApp();
+    else {
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('app-header-ui').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        window.toggleAuth(false);
     }
 };
+
 
 
 
