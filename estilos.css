@@ -205,70 +205,130 @@ button {
     border: 1px solid var(--border);
 }
 
-/* --- SIDEBAR --- */
 .sidebar {
-    position: fixed; left: -300px; top: 0; width: 280px; height: 100%;
-    background: var(--sidebar-bg); z-index: 2000; transition: 0.4s;
-    padding: 30px 20px; display: flex; flex-direction: column;
+    position: fixed; 
+    left: -300px; 
+    top: 0; 
+    width: 280px; 
+    height: 100%;
+    background: var(--sidebar-bg); 
+    z-index: 2000; 
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 30px 20px; 
+    display: flex; 
+    flex-direction: column;
+    border-right: 1px solid var(--border);
 }
-.sidebar.active { left: 0; }
 
+.sidebar.active { 
+    left: 0; 
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+}
+
+.sidebar h3 {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+#side-username {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    display: block;
+}
+
+/* Enlaces del Menú */
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sidebar nav a {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 500;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.03);
+}
+
+.sidebar nav a:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+    transform: translateX(5px);
+}
+
+/* Overlay (Fondo oscuro al abrir menú) */
 .sidebar-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; display: none;
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.6); 
+    z-index: 1500; 
+    display: none;
+    backdrop-filter: blur(4px);
 }
 .sidebar-overlay.active { display: block; }
 
-/* --- MODAL (Mejorado para la pregunta del límite) --- */
-.modal-wrapper {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
-    display: none; justify-content: center; align-items: center;
-    z-index: 9999; backdrop-filter: blur(12px);
-}
-
-.modal-content {
-    background: white; color: black;
-    padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
-}
-
+/* --- BOTÓN HAMBURGUESA MODERNO --- */
 .menu-toggle {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     cursor: pointer;
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
+    transition: 0.3s;
     border: 1px solid var(--border);
-}
-
-.menu-toggle:hover {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: var(--primary);
 }
 
 .menu-toggle span {
     display: block;
-    width: 22px;
+    width: 20px;
     height: 2px;
     background-color: var(--text-white);
-    border-radius: 4px;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 10px;
+    transition: 0.3s;
 }
 
-/* La raya del medio es un poco más corta para dar estilo */
-.menu-toggle span:nth-child(2) {
-    width: 16px;
-    align-self: flex-start;
-    margin-left: 11px;
+.menu-toggle span:nth-child(2) { width: 14px; margin-left: -6px; }
+.menu-toggle:hover span:nth-child(2) { width: 20px; margin-left: 0; }
+
+/* --- FILTROS DE ESTADÍSTICAS (Botones Día/Mes/Año) --- */
+.chart-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-.menu-toggle:hover span:nth-child(2) {
-    width: 22px;
-    margin-left: 0;
+.btn-filter {
+    flex: 1;
+    padding: 10px;
+    font-size: 0.85rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 10px;
+}
+
+.btn-filter.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 
