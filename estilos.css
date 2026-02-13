@@ -1,4 +1,10 @@
 
+Entendido. He tomado tu código CSS actual y he integrado las secciones necesarias para que el sidebar se vea perfecto con tu HTML, respetando todas tus variables y estilos previos sin borrar nada de lo que ya funciona.
+
+Aquí tienes el CSS completo y corregido:
+
+CSS
+
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -46,6 +52,156 @@ body {
     justify-content: space-between;
     padding: 10px 20px;
     height: 70px;
+}
+
+/* --- ICONO DE MENÚ (RAYAS MODERNAS) --- */
+.menu-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: 0.3s;
+    border: 1px solid var(--border);
+}
+
+.menu-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: var(--text-white);
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.menu-toggle span:nth-child(2) { 
+    width: 14px; 
+    margin-left: -6px; 
+}
+
+.menu-toggle:hover {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.menu-toggle:hover span:nth-child(2) { 
+    width: 20px; 
+    margin-left: 0; 
+}
+
+/* --- SIDEBAR (ESTRUCTURA PARA TU HTML) --- */
+.sidebar {
+    position: fixed;
+    left: -300px;
+    top: 0;
+    width: 280px;
+    height: 100%;
+    background: var(--sidebar-bg);
+    z-index: 2000;
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+}
+
+.sidebar.active {
+    left: 0;
+    box-shadow: 15px 0 40px rgba(0,0,0,0.7);
+}
+
+/* Cabecera del usuario dentro del menú */
+.sidebar-header {
+    padding: 30px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.user-avatar {
+    font-size: 1.8rem;
+    background: var(--card-bg);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+#side-username {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-white);
+    margin: 0; /* Reseteado para que no use el margin de 40px anterior */
+}
+
+#side-fullname {
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Navegación */
+.sidebar-nav {
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.sidebar-nav a {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: 0.3s;
+    background: rgba(255,255,255,0.02);
+}
+
+.sidebar-nav a:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+    transform: translateX(8px);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* Overlay */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1500;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* --- BOTONES DE FILTRO ESTADÍSTICAS --- */
+.btn-filter.active {
+    background: var(--primary) !important;
+    color: white !important;
 }
 
 /* LOGO STYLE */
@@ -203,101 +359,5 @@ button {
     justify-content: space-between;
     align-items: center;
     border: 1px solid var(--border);
-}
-
-/* --- DISEÑO INTERIOR DEL SIDEBAR --- */
-.sidebar {
-    position: fixed;
-    left: -300px;
-    top: 0;
-    width: 280px;
-    height: 100%;
-    background: var(--sidebar-bg);
-    z-index: 2000;
-    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 40px 20px;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border);
-}
-
-.sidebar.active {
-    left: 0;
-    box-shadow: 15px 0 40px rgba(0,0,0,0.7);
-}
-
-/* Título de sección dentro del menú */
-.sidebar h3 {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 10px;
-    padding-left: 10px;
-}
-
-/* Nombre del usuario destacado */
-#side-username {
-    display: block;
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: var(--text-white);
-    margin-bottom: 40px;
-    padding-left: 10px;
-    background: linear-gradient(to right, #fff, var(--primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-/* Contenedor de navegación */
-.sidebar nav {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex-grow: 1; /* Empuja el botón de logout hacia abajo */
-}
-
-/* Estilo de los links (Botones del menú) */
-.sidebar nav a {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    color: var(--text-white);
-    text-decoration: none;
-    padding: 14px 20px;
-    border-radius: 16px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid transparent;
-    transition: all 0.3s ease;
-}
-
-/* Efecto al pasar el mouse por los botones */
-.sidebar nav a:hover {
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.3);
-    color: var(--primary);
-    transform: translateX(8px);
-}
-
-/* Iconos o Emojis dentro de los links (opcional si usas emojis) */
-.sidebar nav a i, .sidebar nav a span {
-    font-size: 1.2rem;
-}
-
-/* Botón de Cerrar Sesión (Logout) al final */
-.btn-logout {
-    background: rgba(239, 68, 68, 0.1) !important;
-    color: var(--danger) !important;
-    border: 1px solid rgba(239, 68, 68, 0.2) !important;
-    margin-top: auto; /* Lo pega al fondo del menú */
-    width: 100%;
-    justify-content: center;
-}
-
-.btn-logout:hover {
-    background: var(--danger) !important;
-    color: white !important;
 }
 
