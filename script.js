@@ -1,6 +1,3 @@
-Aquí tienes el script.js definitivo. He tenido un cuidado especial en no borrar nada: mantiene la conexión con tu API en Render, el inicio de sesión, el registro, la tasa del BCV, las gráficas con filtros y, por supuesto, la nueva mejora de alerta de límite que te pregunta si quieres continuar.
-
-JavaScript
 
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
@@ -303,4 +300,5 @@ function logout() {
 window.onload = () => {
     if (currentUser) entrarALaApp();
 };
+
 
