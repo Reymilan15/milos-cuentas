@@ -54,7 +54,7 @@ function showSection(sec) {
     if(sidebar.classList.contains('active')) toggleMenu();
 }
 
-// --- 3. GESTIÓN DE GASTOS ---
+// --- 3. GESTIÓN DE GASTOS (CON BLOQUEO DE DEUDA) ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -62,29 +62,49 @@ async function addTransaction() {
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
+    // Convertir el gasto actual a VES usando la tasa del día
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
+    
+    // Calcular cuánto se ha gastado hasta ahora
     const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
     const saldoActual = budgetVES - totalSpent;
     const nuevoSaldo = saldoActual - valVES;
 
+    // --- MEJORA: BLOQUEO ESTRICTO DE DEUDA ---
+    // Si el nuevo saldo es menor a 0, significa que el gasto excede el presupuesto inicial.
+    if (nuevoSaldo < 0) {
+        return showModal(
+            "Gasto Denegado", 
+            `No puedes gastar más de tu presupuesto. \nSaldo disponible: ${fmt(saldoActual)} BS \nIntento de gasto: ${fmt(valVES)} BS`, 
+            "🚫"
+        );
+    }
+
+    // --- ADVERTENCIA DE LÍMITE (SI EXISTE) ---
     if (spendingLimitVES > 0 && nuevoSaldo <= spendingLimitVES) {
-        const msg = nuevoSaldo < 0 ? `Quedarás en deuda (${fmt(nuevoSaldo)} BS)` : `Límite cerca (${fmt(nuevoSaldo)} BS)`;
+        const msg = `Límite cerca. Te quedarán solo ${fmt(nuevoSaldo)} BS. ¿Deseas continuar?`;
         const confirmar = await showModal("Atención", msg, "⚠️", true);
         if (!confirmar) return;
     }
 
+    // Si pasó las validaciones, se registra el gasto
     transactions.push({ 
-        id: Date.now(), date: new Date().toISOString(), desc, 
-        originalAmount: amount, originalCurrency: curr, valueVES: valVES, 
-        balanceAtMoment: saldoActual 
+        id: Date.now(), 
+        date: new Date().toISOString(), 
+        desc, 
+        originalAmount: amount, 
+        originalCurrency: curr, 
+        valueVES: valVES, 
+        balanceAtMoment: nuevoSaldo // Se guarda el saldo resultante
     });
 
     renderAll(); 
     await syncToCloud();
+    
+    // Limpieza de campos
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
 }
-
 function renderAll() {
     if(!currentUser) return;
     const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
@@ -321,3 +341,4 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
+
