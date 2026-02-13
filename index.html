@@ -52,7 +52,7 @@
         <div class="auth-box">
             <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" alt="Logo" style="width: 80px; margin-bottom: 10px;">
             <h1>Mil Cuentas</h1>
-            <h2 id="auth-title" style="font-size: 1.2rem; margin-bottom: 20px; color: var(--text-color);">Iniciar Sesión</h2>
+            <h2 id="auth-title" style="font-size: 1.2rem; margin-bottom: 20px;">Iniciar Sesión</h2>
             
             <div id="login-form-container">
                 <input type="text" id="username" placeholder="Usuario o Correo">
@@ -66,7 +66,7 @@
                 <input type="text" id="reg-name" placeholder="Nombre">
                 <input type="text" id="reg-lastname" placeholder="Apellido">
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
-                <input type="password" id="reg-password" placeholder="Crea una contraseña">
+                <input type="password" id="reg-password" placeholder="Contraseña">
                 <button onclick="register()" class="btn-success">Crear Cuenta</button>
                 <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: #4f46e5; cursor: pointer; font-weight: bold;">Inicia sesión</span></p>
             </div>
@@ -82,18 +82,19 @@
                 <div class="budget-setup">
                     <input type="number" id="total-budget" placeholder="Presupuesto Total (BS)">
                     <input type="number" id="spending-limit" placeholder="Límite Alerta (BS)">
-                    <div class="button-group">
-                        <button onclick="setBudget()" class="btn-accent">Fijar</button>
+                    <div class="button-group" style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button onclick="setBudget()" class="btn-accent" style="flex: 1;">Fijar</button>
+                        <button onclick="resetApp()" class="btn-reset" style="flex: 1; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">Resetear</button>
                     </div>
                 </div>
                 
                 <div class="balance-card" id="balance-card">
                     <p>Presupuesto Disponible</p>
                     <h2 id="remaining-display">0.00 BS</h2>
-                    <div class="currency-selectors">
-                        <span onclick="changeView('VES')">BS</span>
-                        <span onclick="changeView('USD')">USD</span>
-                        <span onclick="changeView('EUR')">EUR</span>
+                    <div class="currency-selectors" style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; cursor: pointer;">
+                        <span onclick="changeView('VES')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">BS</span>
+                        <span onclick="changeView('USD')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">USD</span>
+                        <span onclick="changeView('EUR')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">EUR</span>
                     </div>
                 </div>
             </header>
@@ -141,4 +142,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
