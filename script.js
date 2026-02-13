@@ -54,7 +54,7 @@ function showSection(sec) {
     if(sidebar.classList.contains('active')) toggleMenu();
 }
 
-// --- 3. GESTIÓN DE GASTOS (CON BLOQUEO DE DEUDA) ---
+// --- 3. GESTIÓN DE GASTOS (CON ADVERTENCIA DE LÍMITE) ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -62,32 +62,33 @@ async function addTransaction() {
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
-    // Convertir el gasto actual a VES usando la tasa del día
+    // 1. Conversión según tasa BCV (Hoy 13 de Febrero 2026)
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
     
-    // Calcular cuánto se ha gastado hasta ahora
-    const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
-    const saldoActual = budgetVES - totalSpent;
-    const nuevoSaldo = saldoActual - valVES;
+    // 2. Cálculos de control
+    const totalGastadoAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
+    const totalGastadoDespues = totalGastadoAntes + valVES;
+    const saldoRestante = budgetVES - totalGastadoDespues;
 
-    // --- MEJORA: BLOQUEO ESTRICTO DE DEUDA ---
-    // Si el nuevo saldo es menor a 0, significa que el gasto excede el presupuesto inicial.
-    if (nuevoSaldo < 0) {
-        return showModal(
-            "Gasto Denegado", 
-            `No puedes gastar más de tu presupuesto. \nSaldo disponible: ${fmt(saldoActual)} BS \nIntento de gasto: ${fmt(valVES)} BS`, 
-            "🚫"
-        );
+    // --- MEJORA: ALERTA DE LÍMITE (SIN BLOQUEO FORZOSO) ---
+    // Si el total acumulado supera el límite configurado (ej: 100bs)
+    if (spendingLimitVES > 0 && totalGastadoDespues > spendingLimitVES) {
+        const exceso = totalGastadoDespues - spendingLimitVES;
+        const msg = `Atención: Este gasto supera tu límite de ${fmt(spendingLimitVES)} BS por ${fmt(exceso)} BS.\n\n¿Deseas registrarlo de todas formas?`;
+        
+        // El parámetro 'true' activa los botones de confirmar/cancelar en tu showModal
+        const confirmar = await showModal("Límite Superado", msg, "⚠️", true);
+        if (!confirmar) return; // Si el usuario dice que NO, se detiene la función aquí.
     }
 
-    // --- ADVERTENCIA DE LÍMITE (SI EXISTE) ---
-    if (spendingLimitVES > 0 && nuevoSaldo <= spendingLimitVES) {
-        const msg = `Límite cerca. Te quedarán solo ${fmt(nuevoSaldo)} BS. ¿Deseas continuar?`;
-        const confirmar = await showModal("Atención", msg, "⚠️", true);
-        if (!confirmar) return;
+    // --- BLOQUEO POR PRESUPUESTO TOTAL (PARA NO QUEDAR EN DEUDA REAL) ---
+    if (totalGastadoDespues > budgetVES) {
+        const msgDeuda = `¡Cuidado! Este gasto excede tu presupuesto inicial de ${fmt(budgetVES)} BS.\nQuedarás con saldo negativo.\n\n¿Estás seguro?`;
+        const confirmarDeuda = await showModal("Presupuesto Agotado", msgDeuda, "💸", true);
+        if (!confirmarDeuda) return;
     }
 
-    // Si pasó las validaciones, se registra el gasto
+    // 3. Registro de la transacción (Si el usuario aceptó las alertas)
     transactions.push({ 
         id: Date.now(), 
         date: new Date().toISOString(), 
@@ -95,13 +96,13 @@ async function addTransaction() {
         originalAmount: amount, 
         originalCurrency: curr, 
         valueVES: valVES, 
-        balanceAtMoment: nuevoSaldo // Se guarda el saldo resultante
+        balanceAtMoment: saldoRestante 
     });
 
     renderAll(); 
     await syncToCloud();
     
-    // Limpieza de campos
+    // Limpiar campos
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
 }
@@ -341,4 +342,5 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
+
 
