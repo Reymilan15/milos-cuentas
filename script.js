@@ -1,3 +1,5 @@
+
+
 const API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -12,7 +14,7 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. GESTIÓN DE TASAS ---
+// --- 1. GESTIÓN DE TASAS (ACTUALIZACIÓN DIARIA BCV) ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
@@ -21,7 +23,7 @@ async function fetchBCVRate() {
             rates.USD = parseFloat(data.monedas.usd.valor);
             rates.EUR = parseFloat(data.monedas.eur.valor);
         }
-    } catch (e) { console.error("Error cargando tasas automáticas."); }
+    } catch (e) { console.error("Error cargando tasas BCV."); }
     updateBCVUI();
     renderAll();
 }
@@ -30,7 +32,7 @@ function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
         rateDisplay.style.cursor = "pointer";
-        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span> <span>| 💶 € <b>${fmt(rates.EUR)}</b></span>`;
+        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span> <span>💶 € <b>${fmt(rates.EUR)}</b></span>`;
         
         rateDisplay.onclick = async () => {
             const opcion = prompt("¿Qué tasa deseas editar?\n1: Dólar ($)\n2: Euro (€)");
@@ -47,7 +49,7 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. AUTENTICACIÓN Y NAVEGACIÓN ---
+// --- 2. AUTENTICACIÓN COMPLETA (LOGIN Y REGISTRO) ---
 window.toggleAuth = (reg) => {
     document.getElementById('login-form-container').style.display = reg ? 'none' : 'flex';
     document.getElementById('register-form-container').style.display = reg ? 'flex' : 'none';
@@ -83,7 +85,7 @@ async function register() {
     const lastname = document.getElementById('reg-lastname').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-    if (!username || !password || !email) return showModal("Error", "Faltan campos obligatorios", "❌");
+    if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -91,7 +93,7 @@ async function register() {
             body: JSON.stringify({ username, password, name, lastname, email })
         });
         if (response.ok) {
-            await showModal("Éxito", "Cuenta creada correctamente", "🎉");
+            await showModal("Éxito", "Cuenta creada", "🎉");
             window.toggleAuth(false);
         } else {
             const data = await response.json();
@@ -111,28 +113,14 @@ function entrarALaApp() {
     fetchBCVRate(); 
 }
 
-function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
-}
-
-function showSection(sec) {
-    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
-    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
-    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
-    if(sec === 'registros') renderFullHistory();
-    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-}
-
-// --- 3. LÓGICA DE TRANSACCIONES Y CONVERSIÓN ---
+// --- 3. TRANSACCIONES Y CONVERSIÓN MATEMÁTICA ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
 
-    if (!desc || isNaN(amount)) return showModal("Error", "Ingresa descripción y monto", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
-    // CONVERSIÓN REAL: Se multiplica el monto por la tasa si no es BS
     let amountInVES = amount;
     if (currency === "USD") amountInVES = amount * rates.USD;
     else if (currency === "EUR") amountInVES = amount * rates.EUR;
@@ -180,14 +168,13 @@ function renderAll() {
 
     const remainingVES = budgetVES - totalSpentVES;
     
-    // --- CONVERSIÓN DE VISTA PRINCIPAL ---
+    // --- CORRECCIÓN DE VISTA: DIVISIÓN REAL ---
     let convertedValue = remainingVES;
     if (currentView === "USD") convertedValue = remainingVES / rates.USD;
     else if (currentView === "EUR") convertedValue = remainingVES / rates.EUR;
 
     display.innerText = `${fmt(convertedValue)} ${currentView}`;
 
-    // Alertas de color
     if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
     else card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
     if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
@@ -195,7 +182,7 @@ function renderAll() {
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 4. REPORTES Y MODALES ---
+// --- 4. REPORTES Y ESTADÍSTICAS ---
 function renderFullHistory() {
     const tableBody = document.getElementById('full-history-body');
     if(!tableBody) return;
@@ -231,6 +218,61 @@ function updateStatsUI(hoy, mes) {
     }
 }
 
+// --- 5. NAVEGACIÓN Y MENÚ ---
+function showSection(sec) {
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    if(sec === 'registros') renderFullHistory();
+    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
+}
+
+function toggleMenu() {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+
+// --- 6. PERSISTENCIA Y MODALES ---
+async function syncToCloud() {
+    if (!currentUser) return;
+    try {
+        await fetch(`${API_URL}/api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser.username, budget: budgetVES,
+                spendingLimit: spendingLimitVES, transactions: transactions
+            })
+        });
+    } catch (e) { console.error("Error Sync"); }
+}
+
+async function setBudget() { 
+    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
+    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
+    renderAll(); await syncToCloud(); 
+    showModal("Éxito", "Configuración guardada", "✅");
+}
+
+function changeView(iso) { currentView = iso; renderAll(); }
+function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
+
+async function deleteTransaction(id) { 
+    if(await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) { 
+        transactions = transactions.filter(t => t.id !== id); 
+        renderAll(); await syncToCloud(); 
+    } 
+}
+
+async function resetApp() {
+    if(await showModal("Reiniciar", "¿Borrar TODO?", "⚠️", true)) {
+        transactions = []; budgetVES = 0; spendingLimitVES = 0;
+        document.getElementById('total-budget').value = "";
+        document.getElementById('spending-limit').value = "";
+        renderAll(); await syncToCloud();
+    }
+}
+
 function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -244,50 +286,4 @@ function showModal(title, message, icon, isConfirm = false) {
     });
 }
 
-// --- 5. PERSISTENCIA Y CONFIGURACIÓN ---
-async function syncToCloud() {
-    if (!currentUser) return;
-    try {
-        await fetch(`${API_URL}/api/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser.username,
-                budget: budgetVES,
-                spendingLimit: spendingLimitVES,
-                transactions: transactions
-            })
-        });
-    } catch (e) { console.error("Error de sincronización"); }
-}
-
-async function setBudget() {
-    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
-    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
-    renderAll();
-    await syncToCloud();
-    showModal("Éxito", "Configuración guardada", "✅");
-}
-
-function changeView(iso) { currentView = iso; renderAll(); }
-function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
-
-async function deleteTransaction(id) {
-    if(await showModal("Eliminar", "¿Borrar este registro?", "🗑️", true)) {
-        transactions = transactions.filter(t => t.id !== id);
-        renderAll(); await syncToCloud();
-    }
-}
-
-async function resetApp() {
-    if(await showModal("Reiniciar", "¿Borrar TODO el historial?", "⚠️", true)) {
-        transactions = []; budgetVES = 0; spendingLimitVES = 0;
-        document.getElementById('total-budget').value = "";
-        document.getElementById('spending-limit').value = "";
-        renderAll(); await syncToCloud();
-    }
-}
-
 window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
-
-
