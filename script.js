@@ -38,87 +38,30 @@ async function fetchBCVRate() {
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) {
-        rateDisplay.innerHTML = `<span style="margin-right: 12px;">💵 $ <b>${fmt(rates.USD)}</b></span><span>| 💶 € <b>${fmt(rates.EUR)}</b></span>`;
-        rateDisplay.onclick = async () => {
-            const opcion = prompt("1: USD, 2: EUR");
-            if(opcion === "1") {
-                const m = prompt("Nuevo USD:", rates.USD);
-                if(m && !isNaN(m)) rates.USD = parseFloat(m);
-            } else if(opcion === "2") {
-                const m = prompt("Nuevo EUR:", rates.EUR);
-                if(m && !isNaN(m)) rates.EUR = parseFloat(m);
-            }
-            updateBCVUI(); renderAll();
-        };
+        rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span> <span>💶 € <b>${fmt(rates.EUR)}</b></span>`;
     }
 }
 
-// --- 2. AUTENTICACIÓN (CORREGIDA PARA SEPARACIÓN TOTAL) ---
+// --- 2. AUTENTICACIÓN (LOGIN Y REGISTRO SEPARADOS) ---
 window.toggleAuth = function(showRegister) {
     const loginForm = document.getElementById('login-form-container');
     const registerForm = document.getElementById('register-form-container');
     const authTitle = document.getElementById('auth-title');
 
-    // Ocultar TODO antes de mostrar lo nuevo
-    if (loginForm) loginForm.style.display = 'none';
-    if (registerForm) registerForm.style.display = 'none';
-
     if (showRegister) {
-        if (registerForm) {
-            registerForm.style.display = 'flex';
-            registerForm.style.flexDirection = 'column';
-            registerForm.style.gap = '15px';
-        }
-        if (authTitle) authTitle.innerText = "Crear Cuenta Nueva";
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'flex';
+        registerForm.style.flexDirection = 'column';
+        registerForm.style.gap = '15px';
+        authTitle.innerText = "Crear Cuenta Nueva";
     } else {
-        if (loginForm) {
-            loginForm.style.display = 'flex';
-            loginForm.style.flexDirection = 'column';
-            loginForm.style.gap = '15px';
-        }
-        if (authTitle) authTitle.innerText = "Iniciar Sesión";
+        registerForm.style.display = 'none';
+        loginForm.style.display = 'flex';
+        loginForm.style.flexDirection = 'column';
+        loginForm.style.gap = '15px';
+        authTitle.innerText = "Iniciar Sesión";
     }
 };
-
-async function syncToCloud() {
-    if (!currentUser) return;
-    try {
-        await fetch(`${API_URL}/api/save`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser.username,
-                budget: budgetVES,
-                spendingLimit: spendingLimitVES,
-                transactions: transactions
-            })
-        });
-    } catch (error) { console.error("Error sincronizando:", error); }
-}
-
-async function register() {
-    const username = document.getElementById('reg-username').value;
-    const name = document.getElementById('reg-name').value;
-    const lastname = document.getElementById('reg-lastname').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    if (!username || !password || !email) return showModal("Error", "Campos incompletos", "❌");
-
-    try {
-        const response = await fetch(`${API_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, name, lastname, email })
-        });
-        if (response.ok) {
-            await showModal("Éxito", "Cuenta creada.", "🎉");
-            window.toggleAuth(false);
-        } else {
-            const data = await response.json();
-            showModal("Error", data.error, "❌");
-        }
-    } catch (e) { showModal("Error", "Reintenta.", "📡"); }
-}
 
 async function login() {
     const identifier = document.getElementById('username').value;
@@ -139,19 +82,43 @@ async function login() {
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
             entrarALaApp();
-        } else { showModal("Error", "Acceso denegado.", "🚫"); }
-    } catch (e) { showModal("Error", "Error de red.", "❌"); }
+        } else { showModal("Error", "Datos incorrectos", "🚫"); }
+    } catch (e) { showModal("Error", "Error de red", "❌"); }
 }
 
-// --- 3. NAVEGACIÓN ---
+async function register() {
+    const username = document.getElementById('reg-username').value;
+    const name = document.getElementById('reg-name').value;
+    const lastname = document.getElementById('reg-lastname').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
+
+    try {
+        const response = await fetch(`${API_URL}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, name, lastname, email })
+        });
+        if (response.ok) {
+            await showModal("Éxito", "Cuenta creada", "🎉");
+            window.toggleAuth(false);
+        } else {
+            const data = await response.json();
+            showModal("Error", data.error, "❌");
+        }
+    } catch (e) { showModal("Error", "Error de red", "📡"); }
+}
+
+// --- 3. FUNCIONES DE LA APP ---
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    const headerUI = document.getElementById('app-header-ui');
-    if(headerUI) headerUI.style.display = 'flex';
+    document.getElementById('app-header-ui').style.display = 'flex';
     
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
+    
     updateUserUI();
     fetchBCVRate(); 
     showSection('inicio');
@@ -159,51 +126,65 @@ function entrarALaApp() {
 
 function logout() {
     localStorage.removeItem('milCuentas_session');
-    document.getElementById('app-container').style.display = 'none';
-    const headerUI = document.getElementById('app-header-ui');
-    if(headerUI) headerUI.style.display = 'none';
     location.reload();
 }
 
-async function showSection(section) {
-    document.getElementById('sidebar').classList.remove('active');
-    document.getElementById('sidebar-overlay').classList.remove('active');
-    const secInicio = document.getElementById('section-inicio');
-    const secStats = document.getElementById('section-stats');
-    if (section === 'inicio') {
-        secInicio.style.display = 'block';
-        secStats.style.display = 'none';
-        renderAll(); 
-    } else if (section === 'stats') {
-        secInicio.style.display = 'none';
-        secStats.style.display = 'block';
+async function setBudget() {
+    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
+    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
+    renderAll();
+    await syncToCloud();
+    showModal("Guardado", "Presupuesto actualizado", "⚙️");
+}
+
+function changeView(iso) {
+    currentView = iso;
+    renderAll();
+}
+
+async function resetApp() {
+    if (await showModal("Borrar Todo", "¿Seguro que quieres resetear tus cuentas?", "🗑️", true)) {
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        document.getElementById('total-budget').value = "";
+        document.getElementById('spending-limit').value = "";
         renderAll();
+        await syncToCloud();
     }
 }
 
-// --- 4. GESTIÓN DE DATOS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const currency = document.getElementById('currency').value;
-    if (!desc || isNaN(amount)) return showModal("Error", "Datos vacíos.", "🛒");
+    if (!desc || isNaN(amount)) return showModal("Error", "Ingresa descripción y monto", "🛒");
 
     const amountInVES = (currency === "VES") ? amount : amount * rates[currency];
-    transactions.push({ id: Date.now(), date: new Date().toISOString(), desc, originalAmount: amount, originalCurrency: currency, valueVES: amountInVES });
+    
+    transactions.push({ 
+        id: Date.now(), 
+        date: new Date().toISOString(), 
+        desc, 
+        originalAmount: amount, 
+        originalCurrency: currency, 
+        valueVES: amountInVES 
+    });
+
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
     renderAll();
-    await syncToCloud(); 
+    await syncToCloud();
 }
 
 function renderAll() {
     const list = document.getElementById('transaction-list');
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
-    if(!list || !display) return;
-
+    
     let totalSpentVES = 0, totalHoy = 0, totalMes = 0;
     list.innerHTML = '';
+
     const isToday = (d) => new Date(d).toDateString() === new Date().toDateString();
     const isThisMonth = (d) => new Date(d).getMonth() === new Date().getMonth();
 
@@ -211,35 +192,55 @@ function renderAll() {
         totalSpentVES += t.valueVES;
         if (isToday(t.date)) totalHoy += t.valueVES;
         if (isThisMonth(t.date)) totalMes += t.valueVES;
+
         const li = document.createElement('li');
-        li.innerHTML = `<div><b>${t.desc}</b><br><span>${fmt(t.originalAmount)} ${t.originalCurrency}</span></div>
+        li.innerHTML = `<div><b>${t.desc}</b><br><small>${fmt(t.originalAmount)} ${t.originalCurrency}</small></div>
             <div style="text-align: right;"><strong>-${fmt(t.valueVES)} BS</strong><br>
-            <small onclick="deleteTransaction(${t.id})" style="color: #ef4444; cursor: pointer;">Eliminar</small></div>`;
+            <span onclick="deleteTransaction(${t.id})" style="color:red; cursor:pointer; font-size:10px;">Eliminar</span></div>`;
         list.appendChild(li);
     });
 
     const remainingVES = budgetVES - totalSpentVES;
+    
+    // Lógica de Alerta por límite
+    if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) {
+        card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)"; // Naranja alerta
+    } else {
+        card.style.background = "linear-gradient(135deg, #4f46e5, #7c3aed)";
+    }
+    if (remainingVES <= 0) card.style.background = "linear-gradient(135deg, #dc2626, #991b1b)";
+
     const converted = (currentView === "VES") ? remainingVES : remainingVES / rates[currentView];
     display.innerText = `${fmt(converted)} ${currentView}`;
     
-    if (budgetVES > 0 && card) {
-        card.style.background = remainingVES <= 0 ? "linear-gradient(135deg, #dc2626, #991b1b)" : "linear-gradient(135deg, #4f46e5, #7c3aed)";
-    }
     updateStatsUI(totalHoy, totalMes);
 }
 
+// --- RESTO DE FUNCIONES (Stats, Sidebar, Modales) ---
 function updateStatsUI(hoy, mes) {
-    const statsDiv = document.getElementById('stats-panel');
-    if (!statsDiv) return;
-    statsDiv.innerHTML = `
-        <div class="stats-container" style="display: grid; gap: 15px; margin-top: 20px;">
-            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid var(--primary);">
-                <small>Hoy</small><h2>${fmt(hoy)} BS</h2>
-            </div>
-            <div class="stat-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; border-left: 5px solid #22c55e;">
-                <small>Este Mes</small><h2>${fmt(mes)} BS</h2>
-            </div>
-        </div>`;
+    const panel = document.getElementById('stats-panel');
+    if(panel) panel.innerHTML = `<div class="stat-item">Hoy: ${fmt(hoy)} BS</div><div class="stat-item">Mes: ${fmt(mes)} BS</div>`;
+}
+
+async function deleteTransaction(id) {
+    transactions = transactions.filter(t => t.id !== id);
+    renderAll(); await syncToCloud();
+}
+
+async function syncToCloud() {
+    if (!currentUser) return;
+    try {
+        await fetch(`${API_URL}/api/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser.username,
+                budget: budgetVES,
+                spendingLimit: spendingLimitVES,
+                transactions: transactions
+            })
+        });
+    } catch (e) { console.error("Error Sync"); }
 }
 
 function toggleMenu() {
@@ -247,24 +248,19 @@ function toggleMenu() {
     document.getElementById('sidebar-overlay').classList.toggle('active');
 }
 
+function showSection(sec) {
+    document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
+    document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
+    toggleMenu();
+}
+
 function updateUserUI() {
-    const sideU = document.getElementById('side-username');
-    const sideF = document.getElementById('side-fullname');
-    if(sideU) sideU.innerText = userName;
-    if(sideF) sideF.innerText = `${userName} ${userLastName}`;
+    document.getElementById('side-username').innerText = userName;
 }
 
-async function deleteTransaction(id) {
-    if (await showModal("Eliminar", "¿Borrar?", "🗑️", true)) {
-        transactions = transactions.filter(t => t.id !== id);
-        renderAll(); await syncToCloud();
-    }
-}
-
-function showModal(title, message, icon = "⚠️", isConfirm = false) {
+function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
-        if(!modal) return resolve(true);
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = message;
         document.getElementById('modal-icon').innerText = icon;
@@ -277,12 +273,7 @@ function showModal(title, message, icon = "⚠️", isConfirm = false) {
 
 window.onload = () => {
     if (currentUser) entrarALaApp();
-    else {
-        document.getElementById('app-container').style.display = 'none';
-        document.getElementById('app-header-ui').style.display = 'none';
-        document.getElementById('login-screen').style.display = 'flex';
-        window.toggleAuth(false);
-    }
+    else window.toggleAuth(false);
 };
 
 
