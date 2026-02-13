@@ -1,7 +1,4 @@
-// Usamos var para permitir que el navegador maneje la carga sin errores de "already declared"
-if (typeof API_URL === 'undefined') {
-    var API_URL = "https://milos-cuentas.onrender.com";
-}
+var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
 let budgetVES = 0;
@@ -15,30 +12,18 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. ACTUALIZACIÓN DIARIA BCV (Mantenido y Mejorado para evitar ERR_NAME_NOT_RESOLVED) ---
+// --- 1. ACTUALIZACIÓN DIARIA BCV ---
 async function fetchBCVRate() {
     try {
-        // Intentamos primero con la API de respaldo más estable para evitar el bloqueo de pydolar
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
         const data = await response.json();
-        
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
-            // El BCV suele tener el euro un poco por encima del dólar (~1.08)
             rates.EUR = rates.USD * 1.08; 
-            console.log("Tasas BCV actualizadas exitosamente:", rates);
-        } else {
-            // Si falla, intentamos tu fuente original por si acaso
-            const res2 = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
-            const data2 = await res2.json();
-            if(data2 && data2.monedas) {
-                rates.USD = parseFloat(data2.monedas.usd.valor);
-                rates.EUR = parseFloat(data2.monedas.eur.valor);
-            }
+            console.log("Tasas actualizadas:", rates);
         }
     } catch (e) { 
-        console.error("Error al obtener tasas del BCV. Usando valores previos o por defecto."); 
-        // Si no hay internet o falla la API, ponemos un valor de respaldo para que la app no divida por 1
+        console.error("Error al obtener tasas BCV.");
         if(rates.USD === 1) rates.USD = 36.50; 
     }
     updateBCVUI();
@@ -52,9 +37,9 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LÓGICA DE CONVERSIÓN (Tu lógica original sin limpiar nada) ---
+// --- 2. LÓGICA DE CONVERSIÓN ---
 function changeView(iso) {
-    currentView = iso; // 'VES', 'USD' o 'EUR'
+    currentView = iso;
     renderAll(); 
 }
 
@@ -63,7 +48,7 @@ function renderAll() {
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
     
-    if(!list || !display) return; // Protección básica
+    if(!list || !display) return;
 
     let totalSpentVES = 0;
     let totalHoy = 0;
@@ -71,7 +56,6 @@ function renderAll() {
     list.innerHTML = '';
     const hoy = new Date();
 
-    // Siempre calculamos sobre la base de Bolívares
     [...transactions].reverse().forEach(t => {
         totalSpentVES += t.valueVES;
         const tDate = new Date(t.date);
@@ -88,18 +72,13 @@ function renderAll() {
 
     const remainingVES = budgetVES - totalSpentVES;
     
-    // OPERACIÓN MATEMÁTICA SEGÚN TASA BCV
+    // AQUÍ SE HACE LA DIVISIÓN PARA DÓLAR/EURO
     let finalValue = remainingVES;
-    if (currentView === "USD") {
-        finalValue = remainingVES / rates.USD; // DIVISIÓN PARA DÓLAR
-    } else if (currentView === "EUR") {
-        finalValue = remainingVES / rates.EUR; // DIVISIÓN PARA EURO
-    }
+    if (currentView === "USD") finalValue = remainingVES / rates.USD;
+    else if (currentView === "EUR") finalValue = remainingVES / rates.EUR;
 
-    // Actualizamos el display principal
     display.innerText = `${fmt(finalValue)} ${currentView === 'VES' ? 'BS' : currentView}`;
 
-    // Colores de alerta por presupuesto
     if (spendingLimitVES > 0 && remainingVES <= spendingLimitVES) {
         card.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
     } else {
@@ -141,7 +120,7 @@ async function addTransaction() {
     await syncToCloud();
 }
 
-// --- 4. AUTENTICACIÓN (LOGIN Y REGISTRO) ---
+// --- 4. AUTENTICACIÓN ---
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -161,8 +140,8 @@ async function login() {
             userName = user.name || "Usuario";
             userLastName = user.lastname || "";
             entrarALaApp();
-        } else { showModal("Error", "Credenciales incorrectas", "🚫"); }
-    } catch (e) { showModal("Error", "Error de conexión con el servidor", "❌"); }
+        } else { showModal("Error", "Datos incorrectos", "🚫"); }
+    } catch (e) { showModal("Error", "Error de servidor", "❌"); }
 }
 
 async function register() {
@@ -171,7 +150,7 @@ async function register() {
     const lastname = document.getElementById('reg-lastname').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-    if (!username || !password || !email) return showModal("Error", "Datos obligatorios faltantes", "❌");
+    if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
     try {
         const response = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -179,17 +158,13 @@ async function register() {
             body: JSON.stringify({ username, password, name, lastname, email })
         });
         if (response.ok) {
-            await showModal("Éxito", "Cuenta creada correctamente", "🎉");
+            await showModal("Éxito", "Cuenta creada", "🎉");
             window.toggleAuth(false);
-        } else {
-            const data = await response.json();
-            showModal("Error", data.error || "No se pudo registrar", "❌");
         }
-    } catch (e) { showModal("Error", "Error de servidor", "📡"); }
+    } catch (e) { showModal("Error", "Error de registro", "📡"); }
 }
 
 function entrarALaApp() {
-    if(!currentUser) return;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
@@ -200,7 +175,7 @@ function entrarALaApp() {
     fetchBCVRate(); 
 }
 
-// --- 5. FUNCIONES DE APOYO (HISTORIAL, SYNC, ETC) ---
+// --- 5. FUNCIONES DE APOYO ---
 function renderFullHistory() {
     const tableBody = document.getElementById('full-history-body');
     if(!tableBody) return;
@@ -234,14 +209,20 @@ async function syncToCloud() {
                 spendingLimit: spendingLimitVES, transactions: transactions
             })
         });
-    } catch (e) { console.error("Error al sincronizar"); }
+    } catch (e) { console.error("Error Sync"); }
 }
 
 async function setBudget() { 
     budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
     spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
     renderAll(); await syncToCloud(); 
-    showModal("Éxito", "Presupuesto guardado", "✅");
+    showModal("Éxito", "Guardado", "✅");
+}
+
+function resetApp() {
+    showModal("Resetear", "¿Borrar todo?", "⚠️", true).then(confirm => {
+        if(confirm) { transactions = []; budgetVES = 0; renderAll(); syncToCloud(); }
+    });
 }
 
 function showSection(sec) {
@@ -253,16 +234,14 @@ function showSection(sec) {
 }
 
 function toggleMenu() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if(sidebar) sidebar.classList.toggle('active');
-    if(overlay) overlay.classList.toggle('active');
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
 }
 
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
 async function deleteTransaction(id) { 
-    if(await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) { 
+    if(await showModal("Eliminar", "¿Borrar?", "🗑️", true)) { 
         transactions = transactions.filter(t => t.id !== id); 
         renderAll(); await syncToCloud(); 
     } 
@@ -271,7 +250,6 @@ async function deleteTransaction(id) {
 function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
-        if(!modal) { alert(message); resolve(true); return; }
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = message;
         document.getElementById('modal-icon').innerText = icon;
@@ -287,8 +265,4 @@ window.toggleAuth = (reg) => {
     document.getElementById('register-form-container').style.display = reg ? 'flex' : 'none';
 };
 
-window.onload = () => { 
-    if (currentUser) entrarALaApp(); 
-    else window.toggleAuth(false); 
-};
-
+window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
