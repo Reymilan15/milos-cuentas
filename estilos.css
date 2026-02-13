@@ -206,7 +206,6 @@ button {
 }
 
 /* --- DISEÑO INTERIOR DEL SIDEBAR --- */
-/* --- SIDEBAR (Basado en tu HTML real) --- */
 .sidebar {
     position: fixed;
     left: -300px;
@@ -216,6 +215,7 @@ button {
     background: var(--sidebar-bg);
     z-index: 2000;
     transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
@@ -226,108 +226,78 @@ button {
     box-shadow: 15px 0 40px rgba(0,0,0,0.7);
 }
 
-/* Cabecera del usuario */
-.sidebar-header {
-    padding: 30px 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid var(--border);
+/* Título de sección dentro del menú */
+.sidebar h3 {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    padding-left: 10px;
+}
+
+/* Nombre del usuario destacado */
+#side-username {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-white);
+    margin-bottom: 40px;
+    padding-left: 10px;
+    background: linear-gradient(to right, #fff, var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Contenedor de navegación */
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1; /* Empuja el botón de logout hacia abajo */
+}
+
+/* Estilo de los links (Botones del menú) */
+.sidebar nav a {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 20px;
-}
-
-.user-avatar {
-    font-size: 2rem;
-    background: var(--card-bg);
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-}
-
-.user-info {
-    display: flex;
-    flex-direction: column;
-}
-
-#side-username {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--text-white);
-}
-
-#side-fullname {
-    color: var(--primary);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-/* Navegación */
-.sidebar-nav {
-    padding: 0 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex-grow: 1;
-}
-
-.sidebar-nav a {
     color: var(--text-white);
     text-decoration: none;
-    padding: 15px;
-    border-radius: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: 0.3s;
+    padding: 14px 20px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
 }
 
-.sidebar-nav a:hover {
+/* Efecto al pasar el mouse por los botones */
+.sidebar nav a:hover {
     background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
     color: var(--primary);
-    transform: translateX(5px);
+    transform: translateX(8px);
 }
 
-/* Footer y Botón de Cerrar Sesión */
-.sidebar-footer {
-    padding: 20px;
-    border-top: 1px solid var(--border);
+/* Iconos o Emojis dentro de los links (opcional si usas emojis) */
+.sidebar nav a i, .sidebar nav a span {
+    font-size: 1.2rem;
 }
 
+/* Botón de Cerrar Sesión (Logout) al final */
 .btn-logout {
     background: rgba(239, 68, 68, 0.1) !important;
     color: var(--danger) !important;
-    border: 1px solid var(--danger) !important;
-    font-weight: 700;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    margin-top: auto; /* Lo pega al fondo del menú */
     width: 100%;
-    padding: 12px;
-    border-radius: 12px;
+    justify-content: center;
 }
 
 .btn-logout:hover {
     background: var(--danger) !important;
     color: white !important;
 }
-
-/* Overlay */
-.sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 1500;
-    display: none;
-    backdrop-filter: blur(4px);
-}
-.sidebar-overlay.active {
-    display: block;
-}
-
-
-
-
 
