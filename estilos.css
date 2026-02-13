@@ -10,7 +10,7 @@
     --sidebar-bg: #111827;
     --text-white: #f8fafc;
     --text-muted: #94a3b8;
-    --glass: rgba(30, 41, 59, 0.75);
+    --glass: rgba(30, 41, 59, 0.7);
     --border: rgba(255, 255, 255, 0.08);
 }
 
@@ -31,213 +31,90 @@ body {
     line-height: 1.5;
 }
 
-/* --- NUEVO: BARRA SUPERIOR FIJA --- */
+/* --- BARRA SUPERIOR FIJA --- */
 #app-header-ui {
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); /* Soporte iOS */
 }
 
-/* LOGO STYLE */
-.app-logo-main {
-    height: 30px;
-    width: auto;
-    object-fit: contain;
-}
-
-.auth-logo {
-    width: 80px;
-    height: auto;
-    margin-bottom: 15px;
-    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
-}
-
-/* --- 2. PANTALLA DE AUTENTICACIÓN --- */
-.auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 20px;
-    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.auth-box {
-    background: var(--card-bg);
-    padding: 40px 30px;
-    border-radius: 28px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border);
-    text-align: center;
-}
-
-/* --- CORRECCIÓN LOGIN/REGISTRO REPETIDO --- */
-#login-buttons, #register-buttons {
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 15px !important; /* Mantiene la separación siempre */
-    align-items: center;
-}
-
-.auth-box h1 {
-    font-size: 2.2rem;
-    margin-bottom: 10px;
-    letter-spacing: -1px;
-    background: linear-gradient(to right, #818cf8, #c084fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.auth-box #auth-title {
+/* --- BOTONES DE FILTRO GRÁFICA (MEJORA NUEVA) --- */
+.btn-filter {
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
-    margin-bottom: 30px;
-    font-weight: 500;
-}
-
-/* --- 3. ELEMENTOS DE FORMULARIO --- */
-input, select {
-    width: 100%;
-    padding: 14px 18px;
-    margin: 4px 0; /* Bajé el margen para controlar con el gap de JS */
-    border-radius: 14px;
     border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.6);
-    color: white;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-input:focus, select:focus {
-    border-color: var(--primary);
-    outline: none;
-    background: rgba(15, 23, 42, 0.9);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-}
-
-/* --- 4. BOTONES REFORZADOS --- */
-button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 8px;
-    border-radius: 14px;
-    border: none;
-    font-weight: 700;
-    font-size: 1rem;
+    padding: 8px 16px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-
-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-button:active { transform: scale(0.97); }
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-success { background: var(--success); color: white; }
-.btn-accent { background: var(--accent); color: white; }
-.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-.btn-logout { background: var(--danger); color: white; margin-top: auto; }
-
-.link-text {
-    color: var(--accent);
-    cursor: pointer;
-    font-weight: 600;
-    text-decoration: none;
-    transition: 0.2s;
-}
-
-.link-text:hover { opacity: 0.8; text-decoration: underline; }
-
-/* --- 5. APP CONTAINER Y TARJETA DE SALDO --- */
-.app-container {
-    width: 100%;
-    max-width: 500px;
-    padding: 90px 20px 40px; /* El padding de 90px es vital para el header fijo */
-}
-
-/* Tasa BCV Badge */
-.bcv-badge {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-    padding: 8px 14px;
-    border-radius: 12px;
     font-size: 0.8rem;
-    font-weight: 700;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s all ease;
+    flex: 1;
 }
 
+.btn-filter.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* --- TARJETA DE SALDO DINÁMICA --- */
 .balance-card {
     background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
     padding: 35px 25px;
     border-radius: 30px;
     text-align: center;
     margin-bottom: 30px;
-    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
+    transition: background 0.5s ease; /* Para el cambio suave de color */
 }
 
-.balance-card::after {
+/* Estrellas o brillo de fondo */
+.balance-card::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -100%;
-    width: 100%;
-    height: 200%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    transform: rotate(30deg);
-    animation: shine 6s infinite;
+    width: 100px;
+    height: 100px;
+    background: white;
+    filter: blur(80px);
+    opacity: 0.2;
+    top: -20px;
+    right: -20px;
 }
 
-@keyframes shine {
-    0% { left: -100%; }
-    20% { left: 100%; }
-    100% { left: 100%; }
-}
-
-.balance-card p { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
-.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; letter-spacing: -1.5px; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
-.currency-selectors {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-    position: relative;
-    z-index: 2;
-}
-
-.currency-selectors span {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 6px 14px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: 0.2s;
-}
-
-.currency-selectors span:hover { background: white; color: var(--primary); }
-
-/* --- 6. LISTA DE TRANSACCIONES --- */
+/* --- FORMULARIOS Y INPUTS --- */
 .form-section {
     background: var(--card-bg);
     padding: 25px;
     border-radius: 24px;
     margin-bottom: 30px;
     border: 1px solid var(--border);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-#transaction-list { list-style: none; }
+input, select {
+    width: 100%;
+    padding: 14px 18px;
+    margin: 8px 0;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.4);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
 
+input:focus {
+    border-color: var(--primary);
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* --- HISTORIAL DE TRANSACCIONES --- */
 #transaction-list li {
     background: var(--card-bg);
     padding: 18px;
@@ -247,97 +124,30 @@ button:active { transform: scale(0.97); }
     justify-content: space-between;
     align-items: center;
     border: 1px solid var(--border);
-    transition: 0.3s;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#transaction-list li:hover { transform: translateX(5px); border-color: var(--primary); }
-
-/* --- 7. SIDEBAR Y MENÚ --- */
-.menu-toggle {
-    width: 48px; height: 48px;
-    border-radius: 14px; border: 1px solid var(--border);
-    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
-    cursor: pointer; transition: 0.3s;
+#transaction-list li:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--primary);
+    transform: scale(1.02);
 }
 
-.menu-toggle:hover { background: var(--primary); }
-
-.menu-toggle span { 
-    display: block;
-    width: 22px; 
-    height: 2px; 
-    background: white; 
-    border-radius: 10px; 
-    transition: 0.3s;
+/* --- BOTONES --- */
+button {
+    cursor: pointer;
+    border-radius: 14px;
+    transition: all 0.2s ease;
+    font-family: inherit;
 }
 
-.sidebar {
-    position: fixed; left: -300px; top: 0; width: 280px; height: 100%;
-    background: var(--sidebar-bg); z-index: 2000; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 30px 20px; display: flex; flex-direction: column;
+button:active {
+    transform: scale(0.96);
 }
 
-.sidebar.active { left: 0; }
-
-.sidebar-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
-    backdrop-filter: blur(4px); z-index: 1500; display: none;
-}
-.sidebar-overlay.active { display: block; }
-
-/* --- 8. ESTADÍSTICAS --- */
-.stat-item {
-    transition: 0.3s ease;
-    border: 1px solid var(--border) !important;
-}
-
-/* ANIMACIONES */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Modales */
-.modal-wrapper {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
-    display: none; justify-content: center; align-items: center;
-    z-index: 9999; backdrop-filter: blur(12px);
-}
-
-.modal-content {
-    background: var(--text-white); color: var(--bg-dark);
-    padding: 35px; border-radius: 32px; width: 90%; max-width: 380px; text-align: center;
-}
-
-.sidebar-header {
-    padding-bottom: 30px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.user-avatar {
-    width: 50px;
-    height: 50px;
-    background: var(--primary);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5rem;
-}
-
-.user-info span {
-    display: block;
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--text-white);
-}
-
+/* --- SIDEBAR MEJORADO --- */
 .sidebar-nav a {
-    color: var(--text-white);
+    color: var(--text-muted);
     text-decoration: none;
     padding: 14px 18px;
     border-radius: 12px;
@@ -345,6 +155,42 @@ button:active { transform: scale(0.97); }
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 5px;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+/* --- MODALES --- */
+.modal-wrapper {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.modal-content {
+    background: #1e293b;
+    border: 1px solid var(--border);
+    color: white;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Ajuste para la gráfica */
+canvas {
+    max-width: 100% !important;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 480px) {
+    .balance-card h2 {
+        font-size: 2.2rem;
+    }
+    .app-container {
+        padding-top: 80px;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
 }
 
 
