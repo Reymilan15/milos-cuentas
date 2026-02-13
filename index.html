@@ -5,42 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mil Cuentas - Gestión de Gastos</title>
     
-    <meta name="theme-color" content="#4f46e5">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mil Cuentas">
-    
-    <link rel="icon" type="image/png" href="logo.png"> 
-    <link rel="manifest" href="/milos-cuentas/manifest.json">
     <link rel="stylesheet" href="estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        .btn-filter {
-            background: #334155;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            flex: 1;
-            transition: 0.3s;
-        }
-        .btn-filter.active { background: #4f46e5; font-weight: bold; }
-    </style>
 </head>
 <body>
 
-    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; background: var(--bg-color); padding: 10px 15px; align-items: center; justify-content: space-between;">
+    <div id="app-header-ui" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div id="menu-btn" class="menu-toggle" onclick="toggleMenu()">
                 <span></span><span></span><span></span>
             </div>
-            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" alt="Logo" style="height: 30px; width: auto;">
+            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" class="app-logo-main" alt="Logo">
         </div>
-        <div id="bcv-rate-display" class="bcv-badge">Cargando tasa...</div>
+        <div id="bcv-rate-display" class="bcv-badge" onclick="fetchBCVRate()">Cargando tasa...</div>
     </div>
 
     <div id="sidebar" class="sidebar">
@@ -48,16 +25,14 @@
             <div class="user-avatar">👤</div>
             <div class="user-info">
                 <span id="side-username">Usuario</span>
-                <small id="side-fullname">Nombre Apellido</small>
+                <small id="side-fullname">Mil Cuentas Pro</small>
             </div>
         </div>
-        
         <nav class="sidebar-nav">
             <a href="#" onclick="showSection('inicio')">🏠 Inicio</a>
-            <a href="#" onclick="showSection('registros')">📝 Registro Detallado</a> 
+            <a href="#" onclick="showSection('registros')">📝 Libro de Gastos</a> 
             <a href="#" onclick="showSection('stats')">📊 Estadísticas</a>
         </nav>
-
         <div class="sidebar-footer">
             <button onclick="logout()" class="btn-logout">Cerrar Sesión</button>
         </div>
@@ -67,121 +42,113 @@
 
     <div id="login-screen" class="auth-container">
         <div class="auth-box">
-            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" alt="Logo" style="width: 80px; margin-bottom: 10px;">
+            <img src="https://lezebre.lu/images/detailed/17/30514-Baby-Milo.png" class="auth-logo" alt="Logo">
             <h1>Mil Cuentas</h1>
-            <h2 id="auth-title" style="font-size: 1.2rem; margin-bottom: 20px;">Iniciar Sesión</h2>
+            <h2 id="auth-title">Iniciar Sesión</h2>
             
-            <div id="login-form-container">
+            <div id="login-form-container" style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="text" id="username" placeholder="Usuario o Correo">
                 <input type="password" id="login-password" placeholder="Contraseña">
                 <button onclick="login()" class="btn-primary">Entrar a mi Cuenta</button>
-                <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)" style="color: #4f46e5; cursor: pointer; font-weight: bold;">Regístrate aquí</span></p>
+                <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)">Regístrate aquí</span></p>
             </div>
 
-            <div id="register-form-container" style="display: none;">
+            <div id="register-form-container" style="display: none; flex-direction: column; gap: 10px;">
                 <input type="text" id="reg-username" placeholder="Usuario">
                 <input type="text" id="reg-name" placeholder="Nombre">
-                <input type="text" id="reg-lastname" placeholder="Apellido">
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
                 <input type="password" id="reg-password" placeholder="Contraseña">
                 <button onclick="register()" class="btn-success">Crear Cuenta</button>
-                <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: #4f46e5; cursor: pointer; font-weight: bold;">Inicia sesión</span></p>
+                <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)">Inicia sesión</span></p>
             </div>
         </div>
     </div>
 
-    <div id="app-container" class="app-container" style="display: none; padding-top: 70px;">
+    <div id="app-container" class="app-container" style="display: none;">
         
         <div id="section-inicio">
-            <header>
-                <h1 style="font-size: 1.5rem; text-align: center;">Resumen de Cuenta</h1>
-                
-                <div class="budget-setup">
-                    <input type="number" id="total-budget" placeholder="Presupuesto Total (BS)">
-                    <input type="number" id="spending-limit" placeholder="Límite Alerta (BS)">
-                    <div class="button-group" style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button onclick="setBudget()" class="btn-accent" style="flex: 1;">Fijar</button>
-                        <button onclick="resetApp()" class="btn-reset" style="flex: 1; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">Resetear</button>
-                    </div>
+            <div class="budget-setup" style="background: var(--card-bg); padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid var(--border);">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="number" id="total-budget" placeholder="Presupuesto BS">
+                    <input type="number" id="spending-limit" placeholder="Límite Alerta BS">
                 </div>
-                
-                <div class="balance-card" id="balance-card">
-                    <p>Presupuesto Disponible</p>
-                    <h2 id="remaining-display">0.00 BS</h2>
-                    <div class="currency-selectors" style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; cursor: pointer;">
-                        <span onclick="changeView('VES')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">BS</span>
-                        <span onclick="changeView('USD')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">USD</span>
-                        <span onclick="changeView('EUR')" style="padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 5px;">EUR</span>
-                    </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="setBudget()" class="btn-accent" style="flex: 2;">Fijar Presupuesto</button>
+                    <button onclick="resetApp()" class="btn-reset" style="flex: 1;">Reset</button>
                 </div>
-            </header>
+            </div>
+            
+            <div class="balance-card" id="balance-card">
+                <p>Presupuesto Disponible</p>
+                <h2 id="remaining-display">0.00 BS</h2>
+                <div class="currency-selectors">
+                    <span onclick="changeView('VES')">BS</span>
+                    <span onclick="changeView('USD')">USD</span>
+                    <span onclick="changeView('EUR')">EUR</span>
+                </div>
+            </div>
 
             <section class="form-section">
                 <input type="text" id="desc" placeholder="¿En qué gastaste?">
-                <input type="number" id="amount" placeholder="Monto">
-                <select id="currency">
-                    <option value="VES">Bolívares (BS)</option>
-                    <option value="USD">Dólares ($)</option>
-                    <option value="EUR">Euros (€)</option>
-                </select>
-                <button onclick="addTransaction()" class="btn-primary">Registrar Gasto</button>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="amount" placeholder="Monto" style="flex: 2;">
+                    <select id="currency" style="flex: 1;">
+                        <option value="VES">BS</option>
+                        <option value="USD">$</option>
+                        <option value="EUR">€</option>
+                    </select>
+                </div>
+                <button onclick="addTransaction()" class="btn-primary" style="margin-top: 15px;">Registrar Gasto</button>
             </section>
 
             <section class="history">
-                <h3>Historial Reciente</h3>
+                <h3 style="margin-bottom: 15px; color: var(--text-muted);">Historial Reciente</h3>
                 <ul id="transaction-list"></ul>
             </section>
         </div>
 
-        <div id="section-registros" style="display: none;">
-            <header>
-                <h1>Libro de Gastos</h1>
-            </header>
-            <div style="overflow-x: auto; background: var(--card-bg, #1e293b); border-radius: 12px; padding: 10px;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 400px; color: white;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #4f46e5; text-align: left; font-size: 0.8rem;">
-                            <th style="padding: 10px;">FECHA/HORA</th>
-                            <th style="padding: 10px;">DESCRIPCIÓN</th>
-                            <th style="padding: 10px;">MONTO</th>
-                            <th style="padding: 10px;">SALDO PREVIO</th>
-                        </tr>
-                    </thead>
-                    <tbody id="full-history-body" style="font-size: 0.85rem;"></tbody>
-                </table>
-            </div>
-            <button class="btn-primary" style="margin: 30px auto; display: block;" onclick="showSection('inicio')">Volver al Inicio</button>
-        </div>
-
         <div id="section-stats" style="display: none;">
-            <header>
-                <h1>Estadísticas</h1>
-            </header>
-            
-            <div style="display: flex; gap: 5px; margin: 15px 0; justify-content: center;">
+            <header><h1 style="text-align: center; margin-bottom: 20px;">Estadísticas</h1></header>
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
                 <button onclick="updateChartFilter('7days')" class="btn-filter active" id="btn-7days">Día</button>
                 <button onclick="updateChartFilter('month')" class="btn-filter" id="btn-month">Mes</button>
                 <button onclick="updateChartFilter('year')" class="btn-filter" id="btn-year">Año</button>
             </div>
-
-            <div style="background: #1e293b; border-radius: 15px; padding: 15px; margin-bottom: 20px; height: 250px;">
+            <div style="background: var(--card-bg); border-radius: 24px; padding: 20px; border: 1px solid var(--border); height: 300px; margin-bottom: 20px;">
                 <canvas id="spendingChart"></canvas>
             </div>
+            <div id="stats-panel" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
+        </div>
 
-            <div id="stats-panel"></div>
-            <button class="btn-primary" style="margin: 30px auto; display: block;" onclick="showSection('inicio')">Volver al Inicio</button>
+        <div id="section-registros" style="display: none;">
+            <header><h1 style="text-align: center; margin-bottom: 20px;">Historial Completo</h1></header>
+            <div style="overflow-x: auto; background: var(--card-bg); border-radius: 20px; border: 1px solid var(--border);">
+                <table style="width: 100%; border-collapse: collapse; color: white; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 15px;">Fecha</th>
+                            <th style="padding: 15px;">Concepto</th>
+                            <th style="padding: 15px;">Monto</th>
+                            <th style="padding: 15px;">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-history-body"></tbody>
+                </table>
+            </div>
+            <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
         </div>
 
     </div>
 
-    <div id="custom-modal" class="modal-wrapper" style="display:none;">
+    <div id="custom-modal" class="modal-wrapper">
         <div class="modal-content">
-            <div id="modal-icon">⚠️</div>
-            <h2 id="modal-title">Título</h2>
-            <p id="modal-text"></p>
+            <div id="modal-icon" style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+            <h2 id="modal-title" style="margin-bottom: 10px;">Título</h2>
+            <p id="modal-text" style="color: #475569; margin-bottom: 20px;"></p>
             <div class="modal-buttons">
-                <button id="modal-cancel-btn" style="display: none;">Cancelar</button>
-                <button id="modal-ok-btn">Aceptar</button>
+                <button id="modal-cancel-btn" class="btn-reset">Cancelar</button>
+                <button id="modal-ok-btn" class="btn-primary">Aceptar</button>
             </div>
         </div>
     </div>
@@ -189,7 +156,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-    <script src="script.js"></script>
-</body>
-</html>
-
