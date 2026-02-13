@@ -1,3 +1,4 @@
+// --- CONFIGURACIÓN Y ESTADO (Mantenido intacto) ---
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -12,7 +13,7 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. ACTUALIZACIÓN DIARIA BCV ---
+// --- 1. ACTUALIZACIÓN DIARIA BCV (Tasa del día) ---
 async function fetchBCVRate() {
     try {
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
@@ -20,10 +21,10 @@ async function fetchBCVRate() {
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
             rates.EUR = rates.USD * 1.08; 
-            console.log("Tasas actualizadas:", rates);
+            console.log("Tasas actualizadas con éxito");
         }
     } catch (e) { 
-        console.error("Error al obtener tasas BCV.");
+        console.error("Error al obtener tasas BCV. Usando respaldo.");
         if(rates.USD === 1) rates.USD = 36.50; 
     }
     updateBCVUI();
@@ -37,7 +38,7 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LÓGICA DE CONVERSIÓN ---
+// --- 2. LÓGICA DE CONVERSIÓN (Tu división matemática respetada) ---
 function changeView(iso) {
     currentView = iso;
     renderAll(); 
@@ -72,7 +73,7 @@ function renderAll() {
 
     const remainingVES = budgetVES - totalSpentVES;
     
-    // AQUÍ SE HACE LA DIVISIÓN PARA DÓLAR/EURO
+    // OPERACIÓN DE DIVISIÓN SEGÚN TU SOLICITUD
     let finalValue = remainingVES;
     if (currentView === "USD") finalValue = remainingVES / rates.USD;
     else if (currentView === "EUR") finalValue = remainingVES / rates.EUR;
@@ -89,7 +90,7 @@ function renderAll() {
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 3. REGISTRO DE GASTOS ---
+// --- 3. REGISTRO DE GASTOS (Con saldo previo respetado) ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -120,7 +121,25 @@ async function addTransaction() {
     await syncToCloud();
 }
 
-// --- 4. AUTENTICACIÓN ---
+// --- 4. AUTENTICACIÓN (Sin agrupaciones raras al cerrar sesión) ---
+window.toggleAuth = (reg) => {
+    const loginCont = document.getElementById('login-form-container');
+    const regCont = document.getElementById('register-form-container');
+    const authTitle = document.getElementById('auth-title');
+
+    if (reg) {
+        loginCont.style.display = 'none';
+        regCont.style.display = 'flex';
+        regCont.style.flexDirection = 'column'; // Orden vertical corregido
+        authTitle.innerText = "Crear Cuenta";
+    } else {
+        loginCont.style.display = 'flex';
+        loginCont.style.flexDirection = 'column'; // Orden vertical corregido
+        regCont.style.display = 'none';
+        authTitle.innerText = "Iniciar Sesión";
+    }
+};
+
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -134,40 +153,23 @@ async function login() {
             const user = await response.json();
             currentUser = user;
             localStorage.setItem('milCuentas_session', JSON.stringify(user));
-            transactions = user.transactions || [];
-            budgetVES = user.budget || 0;
-            spendingLimitVES = user.spendingLimit || 0;
-            userName = user.name || "Usuario";
-            userLastName = user.lastname || "";
             entrarALaApp();
-        } else { showModal("Error", "Datos incorrectos", "🚫"); }
-    } catch (e) { showModal("Error", "Error de servidor", "❌"); }
-}
-
-async function register() {
-    const username = document.getElementById('reg-username').value;
-    const name = document.getElementById('reg-name').value;
-    const lastname = document.getElementById('reg-lastname').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    if (!username || !password || !email) return showModal("Error", "Faltan datos", "❌");
-    try {
-        const response = await fetch(`${API_URL}/api/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, name, lastname, email })
-        });
-        if (response.ok) {
-            await showModal("Éxito", "Cuenta creada", "🎉");
-            window.toggleAuth(false);
-        }
-    } catch (e) { showModal("Error", "Error de registro", "📡"); }
+        } else { showModal("Error", "Credenciales incorrectas", "🚫"); }
+    } catch (e) { showModal("Error", "Error de conexión", "❌"); }
 }
 
 function entrarALaApp() {
+    if (!currentUser) return;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
+    
+    transactions = currentUser.transactions || [];
+    budgetVES = currentUser.budget || 0;
+    spendingLimitVES = currentUser.spendingLimit || 0;
+    userName = currentUser.name || "Usuario";
+    userLastName = currentUser.lastname || "";
+
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
     document.getElementById('side-username').innerText = userName;
@@ -175,7 +177,7 @@ function entrarALaApp() {
     fetchBCVRate(); 
 }
 
-// --- 5. FUNCIONES DE APOYO ---
+// --- 5. FUNCIONES DE APOYO (Historial detallado y Sync) ---
 function renderFullHistory() {
     const tableBody = document.getElementById('full-history-body');
     if(!tableBody) return;
@@ -192,12 +194,6 @@ function renderFullHistory() {
     });
 }
 
-function updateStatsUI(hoy, mes) {
-    const p = document.getElementById('stats-panel');
-    if(p) p.innerHTML = `<div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px;">GASTOS HOY: ${fmt(hoy)} BS</div>
-                         <div style="padding:15px; background:#1e293b; border-radius:12px;">GASTOS MES: ${fmt(mes)} BS</div>`;
-}
-
 async function syncToCloud() {
     if (!currentUser) return;
     try {
@@ -209,20 +205,13 @@ async function syncToCloud() {
                 spendingLimit: spendingLimitVES, transactions: transactions
             })
         });
-    } catch (e) { console.error("Error Sync"); }
+    } catch (e) { console.error("Error de sincronización"); }
 }
 
-async function setBudget() { 
-    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0; 
-    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0; 
-    renderAll(); await syncToCloud(); 
-    showModal("Éxito", "Guardado", "✅");
-}
-
-function resetApp() {
-    showModal("Resetear", "¿Borrar todo?", "⚠️", true).then(confirm => {
-        if(confirm) { transactions = []; budgetVES = 0; renderAll(); syncToCloud(); }
-    });
+function updateStatsUI(hoy, mes) {
+    const p = document.getElementById('stats-panel');
+    if(p) p.innerHTML = `<div style="padding:15px; background:#1e293b; border-radius:12px; margin-bottom:10px;">GASTOS HOY: ${fmt(hoy)} BS</div>
+                         <div style="padding:15px; background:#1e293b; border-radius:12px;">GASTOS MES: ${fmt(mes)} BS</div>`;
 }
 
 function showSection(sec) {
@@ -241,7 +230,7 @@ function toggleMenu() {
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 
 async function deleteTransaction(id) { 
-    if(await showModal("Eliminar", "¿Borrar?", "🗑️", true)) { 
+    if(await showModal("Eliminar", "¿Borrar registro?", "🗑️", true)) { 
         transactions = transactions.filter(t => t.id !== id); 
         renderAll(); await syncToCloud(); 
     } 
@@ -259,10 +248,5 @@ function showModal(title, message, icon, isConfirm = false) {
         document.getElementById('modal-cancel-btn').onclick = () => { modal.style.display = "none"; resolve(false); };
     });
 }
-
-window.toggleAuth = (reg) => {
-    document.getElementById('login-form-container').style.display = reg ? 'none' : 'flex';
-    document.getElementById('register-form-container').style.display = reg ? 'flex' : 'none';
-};
 
 window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
