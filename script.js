@@ -1,5 +1,4 @@
 
-
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -129,6 +128,16 @@ function renderFullHistory() {
     });
 }
 
+// --- REEMPLAZO: RENDERCHART Y UPDATECHARTFILTER ---
+function updateChartFilter(f) {
+    currentChartFilter = f;
+    // Actualizar botones visualmente
+    document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById('btn-' + f);
+    if(activeBtn) activeBtn.classList.add('active');
+    renderChart();
+}
+
 function renderChart() {
     const canvas = document.getElementById('spendingChart');
     if(!canvas) return;
@@ -136,11 +145,34 @@ function renderChart() {
     let labels = [], dataValues = [];
     const hoy = new Date();
 
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(hoy.getDate() - i);
-        const dateStr = d.toLocaleDateString();
-        labels.push(dateStr.split('/')[0]); 
-        dataValues.push(transactions.filter(t => new Date(t.date).toLocaleDateString() === dateStr).reduce((s, x) => s + x.valueVES, 0));
+    if (currentChartFilter === '7days') {
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(); d.setDate(hoy.getDate() - i);
+            const dateStr = d.toLocaleDateString();
+            labels.push(dateStr.split('/')[0]); 
+            dataValues.push(transactions.filter(t => new Date(t.date).toLocaleDateString() === dateStr).reduce((s, x) => s + x.valueVES, 0));
+        }
+    } else if (currentChartFilter === 'month') {
+        // Agrupar por semanas del mes actual
+        labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+        for (let i = 3; i >= 0; i--) {
+            const fin = new Date(); fin.setDate(hoy.getDate() - (i * 7));
+            const inicio = new Date(); inicio.setDate(hoy.getDate() - ((i + 1) * 7));
+            dataValues.push(transactions.filter(t => {
+                const f = new Date(t.date);
+                return f > inicio && f <= fin;
+            }).reduce((s, x) => s + x.valueVES, 0));
+        }
+    } else if (currentChartFilter === 'year') {
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(); d.setMonth(hoy.getMonth() - i);
+            labels.push(meses[d.getMonth()]);
+            dataValues.push(transactions.filter(t => {
+                const f = new Date(t.date);
+                return f.getMonth() === d.getMonth() && f.getFullYear() === d.getFullYear();
+            }).reduce((s, x) => s + x.valueVES, 0));
+        }
     }
 
     if (myChart) myChart.destroy();
@@ -148,11 +180,23 @@ function renderChart() {
         type: 'line',
         data: {
             labels,
-            datasets: [{ label: 'Gastos (BS)', data: dataValues, borderColor: '#6366f1', tension: 0.4, fill: true }]
+            datasets: [{ 
+                label: 'Gastos (BS)', 
+                data: dataValues, 
+                borderColor: '#6366f1', 
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4, 
+                fill: true 
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
     });
 }
+// --- FIN DEL REEMPLAZO ---
 
 // --- 5. SISTEMA DE SESIÓN ---
 async function login() {
@@ -172,7 +216,6 @@ async function login() {
     } catch (e) { showModal("Error", "Sin conexión con el servidor", "🌐"); }
 }
 
-// NUEVA: Función de Registro que faltaba
 async function register() {
     const username = document.getElementById('reg-username').value;
     const name = document.getElementById('reg-name').value;
@@ -199,7 +242,7 @@ async function register() {
 function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    document.getElementById('app-header-ui').style.display = 'flex'; // Cambiado de 'none' a 'flex' para que se vea el menú
+    document.getElementById('app-header-ui').style.display = 'flex'; 
     
     transactions = currentUser.transactions || [];
     budgetVES = currentUser.budget || 0;
@@ -276,7 +319,5 @@ function toggleAuth(isReg) {
     document.getElementById('login-form-container').style.display = isReg ? 'none' : 'block';
     document.getElementById('register-form-container').style.display = isReg ? 'block' : 'none';
 }
-
-function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
