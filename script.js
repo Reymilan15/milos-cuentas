@@ -1,11 +1,4 @@
 
-Entiendo perfectamente tu frustración. Tienes razón: lo mejor es que yo te entregue el archivo listo para usar, uniendo tus códigos originales con las correcciones necesarias para que no falte ninguna función (como el Reset o el Menú) y que todo encaje con los IDs de tu HTML.
-
-Aquí tienes el Script final consolidado. He usado tu lógica, tus variables y he asegurado que cada botón de tu HTML tenga su función correspondiente.
-
-script.js (Copia y pega esto completo)
-JavaScript
-
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -316,4 +309,5 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
+
 
