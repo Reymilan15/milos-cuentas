@@ -1,10 +1,4 @@
 
-Entendido. He tomado tu código CSS actual y he integrado las secciones necesarias para que el sidebar se vea perfecto con tu HTML, respetando todas tus variables y estilos previos sin borrar nada de lo que ya funciona.
-
-Aquí tienes el CSS completo y corregido:
-
-CSS
-
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -360,4 +354,5 @@ button {
     align-items: center;
     border: 1px solid var(--border);
 }
+
 
