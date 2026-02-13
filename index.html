@@ -15,6 +15,21 @@
     <link rel="manifest" href="/milos-cuentas/manifest.json">
     <link rel="stylesheet" href="estilos.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .btn-filter {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            flex: 1;
+            transition: 0.3s;
+        }
+        .btn-filter.active { background: #4f46e5; font-weight: bold; }
+    </style>
 </head>
 <body>
 
@@ -121,7 +136,6 @@
         <div id="section-registros" style="display: none;">
             <header>
                 <h1>Libro de Gastos</h1>
-                <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Historial detallado con saldos previos</p>
             </header>
             <div style="overflow-x: auto; background: var(--card-bg, #1e293b); border-radius: 12px; padding: 10px;">
                 <table style="width: 100%; border-collapse: collapse; min-width: 400px; color: white;">
@@ -142,10 +156,15 @@
         <div id="section-stats" style="display: none;">
             <header>
                 <h1>Estadísticas</h1>
-                <p style="text-align: center; color: #94a3b8; margin-bottom: 15px;">Resumen de tus movimientos</p>
             </header>
             
-            <div style="background: #1e293b; border-radius: 15px; padding: 15px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 5px; margin: 15px 0; justify-content: center;">
+                <button onclick="updateChartFilter('7days')" class="btn-filter active" id="btn-7days">Día</button>
+                <button onclick="updateChartFilter('month')" class="btn-filter" id="btn-month">Mes</button>
+                <button onclick="updateChartFilter('year')" class="btn-filter" id="btn-year">Año</button>
+            </div>
+
+            <div style="background: #1e293b; border-radius: 15px; padding: 15px; margin-bottom: 20px; height: 250px;">
                 <canvas id="spendingChart"></canvas>
             </div>
 
@@ -170,3 +189,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+    <script src="script.js"></script>
+</body>
+</html>
+
