@@ -1,4 +1,7 @@
-const API_URL = "https://milos-cuentas.onrender.com"; 
+// Usamos var para permitir que el navegador maneje la carga sin errores de "already declared"
+if (typeof API_URL === 'undefined') {
+    var API_URL = "https://milos-cuentas.onrender.com";
+}
 
 let transactions = [];
 let budgetVES = 0;
@@ -12,19 +15,31 @@ let userLastName = "Invitado";
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
-// --- 1. ACTUALIZACIÓN DIARIA BCV (REVISADO) ---
+// --- 1. ACTUALIZACIÓN DIARIA BCV (Mantenido y Mejorado para evitar ERR_NAME_NOT_RESOLVED) ---
 async function fetchBCVRate() {
     try {
-        // Obtenemos la tasa oficial del día directamente
-        const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
+        // Intentamos primero con la API de respaldo más estable para evitar el bloqueo de pydolar
+        const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
         const data = await response.json();
-        if(data && data.monedas) {
-            rates.USD = parseFloat(data.monedas.usd.valor);
-            rates.EUR = parseFloat(data.monedas.eur.valor);
-            console.log("Tasas BCV del día actualizadas:", rates);
+        
+        if(data && data.promedio) {
+            rates.USD = parseFloat(data.promedio);
+            // El BCV suele tener el euro un poco por encima del dólar (~1.08)
+            rates.EUR = rates.USD * 1.08; 
+            console.log("Tasas BCV actualizadas exitosamente:", rates);
+        } else {
+            // Si falla, intentamos tu fuente original por si acaso
+            const res2 = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
+            const data2 = await res2.json();
+            if(data2 && data2.monedas) {
+                rates.USD = parseFloat(data2.monedas.usd.valor);
+                rates.EUR = parseFloat(data2.monedas.eur.valor);
+            }
         }
     } catch (e) { 
-        console.error("Error al obtener tasas del BCV. Usando valores por defecto."); 
+        console.error("Error al obtener tasas del BCV. Usando valores previos o por defecto."); 
+        // Si no hay internet o falla la API, ponemos un valor de respaldo para que la app no divida por 1
+        if(rates.USD === 1) rates.USD = 36.50; 
     }
     updateBCVUI();
     renderAll();
@@ -37,7 +52,7 @@ function updateBCVUI() {
     }
 }
 
-// --- 2. LÓGICA DE CONVERSIÓN (REVISADO - DIVISIÓN MATEMÁTICA) ---
+// --- 2. LÓGICA DE CONVERSIÓN (Tu lógica original sin limpiar nada) ---
 function changeView(iso) {
     currentView = iso; // 'VES', 'USD' o 'EUR'
     renderAll(); 
@@ -48,6 +63,8 @@ function renderAll() {
     const display = document.getElementById('remaining-display');
     const card = document.getElementById('balance-card');
     
+    if(!list || !display) return; // Protección básica
+
     let totalSpentVES = 0;
     let totalHoy = 0;
     let totalMes = 0;
@@ -93,7 +110,7 @@ function renderAll() {
     updateStatsUI(totalHoy, totalMes);
 }
 
-// --- 3. REGISTRO DE GASTOS (REVISADO) ---
+// --- 3. REGISTRO DE GASTOS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -124,7 +141,7 @@ async function addTransaction() {
     await syncToCloud();
 }
 
-// --- 4. AUTENTICACIÓN (LOGIN Y REGISTRO - REVISADO) ---
+// --- 4. AUTENTICACIÓN (LOGIN Y REGISTRO) ---
 async function login() {
     const identifier = document.getElementById('username').value;
     const password = document.getElementById('login-password').value;
@@ -172,6 +189,7 @@ async function register() {
 }
 
 function entrarALaApp() {
+    if(!currentUser) return;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
@@ -235,8 +253,10 @@ function showSection(sec) {
 }
 
 function toggleMenu() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if(sidebar) sidebar.classList.toggle('active');
+    if(overlay) overlay.classList.toggle('active');
 }
 
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
@@ -251,6 +271,7 @@ async function deleteTransaction(id) {
 function showModal(title, message, icon, isConfirm = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
+        if(!modal) { alert(message); resolve(true); return; }
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = message;
         document.getElementById('modal-icon').innerText = icon;
@@ -266,4 +287,8 @@ window.toggleAuth = (reg) => {
     document.getElementById('register-form-container').style.display = reg ? 'flex' : 'none';
 };
 
-window.onload = () => { if (currentUser) entrarALaApp(); else window.toggleAuth(false); };
+window.onload = () => { 
+    if (currentUser) entrarALaApp(); 
+    else window.toggleAuth(false); 
+};
+
