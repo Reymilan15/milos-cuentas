@@ -307,7 +307,18 @@ async function resetApp() {
     }
 }
 
-window.onload = () => { if (currentUser) entrarALaApp(); else fetchBCVRate(); };
+window.onload = () => {
+    if (currentUser) {
+        // Si hay sesión, forzamos que el login desaparezca
+        document.getElementById('login-screen').style.setProperty("display", "none", "important");
+        entrarALaApp();
+    } else {
+        // Si no hay sesión, aseguramos que la app esté oculta
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('app-header-ui').style.display = 'none';
+        fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
+    }
+};
 
 
 
