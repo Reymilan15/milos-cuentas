@@ -141,16 +141,22 @@
 
             <div class="form-section" style="height: 300px; padding: 15px;">
                 <div class="chart-legend">
-    <div class="legend-item">
-        <span class="legend-color color-income"></span>
-        <span>Ingresos</span>
-    </div>
-    <div class="legend-item">
-        <span class="legend-color color-expense"></span>
-        <span>Gastos</span>
-    </div>
-</div>
+                    <div class="legend-item">
+                        <span class="legend-color color-income"></span>
+                        <span>Ingresos</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color color-expense"></span>
+                        <span>Gastos</span>
+                    </div>
+                </div>
                 <canvas id="spendingChart"></canvas>
+            </div>
+
+            <div id="stats-section">
+                <h2 style="margin: 20px 0 10px; font-size: 1.2rem; color: white;">Desglose de Gastos</h2>
+                <div id="stats-individual-list" style="margin-top: 20px;">
+                    </div>
             </div>
 
             <div id="stats-panel" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
@@ -174,6 +180,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
