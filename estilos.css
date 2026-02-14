@@ -399,5 +399,42 @@ button {
     background: var(--primary);
     color: white;
 }
+/* --- LEYENDA DE ESTADÍSTICAS --- */
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-white);
+}
+
+/* El circulito de color */
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+}
+
+.color-income { 
+    background: var(--success); 
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+.color-expense { 
+    background: var(--danger); 
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
 
 
