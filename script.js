@@ -1,10 +1,3 @@
-He integrado la nueva funcionalidad de "Desglose Individual de Gastos" dentro de tu lógica actual.
-
-He modificado la función addTransaction para que capture la hora exacta y he creado una nueva función renderIndividualStats que se encarga de pintar esas tarjetas detalladas que pediste en la sección de estadísticas. No se ha borrado ninguna funcionalidad de presupuesto, BCV ni sincronización.
-
-Aquí tienes tu código actualizado:
-
-JavaScript
 
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
@@ -377,4 +370,5 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
+
 
