@@ -104,24 +104,40 @@ function toggleStatsOrder() {
 function renderIndividualStats() {
     const container = document.getElementById('stats-individual-list');
     if (!container) return;
-    container.innerHTML = '';
     
-    let sorted = [...transactions];
-    sorted.sort((a, b) => statsOrderAsc ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date));
+    container.innerHTML = ''; // Limpiamos la lista actual
+    
+    // Hacemos una copia de las transacciones para no alterar la base de datos original
+    let sorted = [...transactions]; 
 
+    // Aplicamos el orden (Ascendente o Descendente)
+    sorted.sort((a, b) => {
+        return statsOrderAsc 
+            ? new Date(a.date) - new Date(b.date) 
+            : new Date(b.date) - new Date(a.date);
+    });
+
+    // Creamos una tarjeta INDIVIDUAL por cada gasto
     sorted.forEach(t => {
         const card = document.createElement('div');
         card.className = 'expense-item-card';
+        
+        // Al hacer clic en la tarjeta, nos lleva a ver ese punto en la gráfica
         card.onclick = () => focusTransactionInChart(t.date);
+        
         card.innerHTML = `
-            <div class="expense-card-top">
-                <span><b>${t.desc}</b></span>
-                <span style="color:var(--danger)">-${fmt(t.valueVES)} BS</span>
+            <div class="expense-card-top" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 700; color: var(--text-white);">${t.desc}</span>
+                <span class="expense-amount" style="color: var(--danger); font-weight: 800;">
+                    -${fmt(t.valueVES)} BS
+                </span>
             </div>
-            <div class="expense-card-bottom" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:5px;">
-                <span>📅 ${new Date(t.date).toLocaleDateString()} 🕒 ${t.time || ''}</span>
-                <span style="color:var(--primary)">Ver ↑</span>
-            </div>`;
+            <div class="expense-card-bottom" style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px;">
+                <span>📅 ${new Date(t.date).toLocaleDateString()}</span>
+                <span>🕒 ${t.time || '--:--'}</span>
+                <span style="color: var(--primary); font-weight: 600;">Ver en gráfica ↑</span>
+            </div>
+        `;
         container.appendChild(card);
     });
 }
@@ -319,6 +335,7 @@ window.onload = () => {
         fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
     }
 };
+
 
 
 
