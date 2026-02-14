@@ -1,6 +1,3 @@
-He agregado las reglas de estilo para el scroll minimalista y el límite de altura de la lista de gastos individuales al final de tu archivo CSS. No se ha eliminado ninguna de tus variables de color ni los estilos del menú, el modal o las tarjetas.
-
-CSS
 
 :root {
     --primary: #6366f1;
@@ -258,3 +255,4 @@ button {
     background: var(--border);
     border-radius: 10px;
 }
+
