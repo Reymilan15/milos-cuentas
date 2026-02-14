@@ -108,34 +108,72 @@ async function addTransaction() {
 
 // --- NUEVA FUNCIÓN: RENDERIZAR GASTOS SEPARADOS EN ESTADÍSTICAS ---
 function renderIndividualStats() {
+    c// --- MEJORA: RENDERIZAR GASTOS CON INTERACCIÓN Y ORDEN ---
+let statsOrderAsc = false; // Por defecto descendente (más reciente primero)
+
+function toggleStatsOrder() {
+    statsOrderAsc = !statsOrderAsc;
+    renderIndividualStats();
+}
+
+function renderIndividualStats() {
     const container = document.getElementById('stats-individual-list');
     if (!container) return;
     
     container.innerHTML = '';
     
-    // Mostramos los gastos de forma individual y reversa (el último primero)
-    [...transactions].reverse().forEach(t => {
+    // Clonamos y ordenamos según la preferencia
+    let sortedTransactions = [...transactions];
+    if (statsOrderAsc) {
+        sortedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    } else {
+        sortedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    sortedTransactions.forEach((t, index) => {
         const card = document.createElement('div');
         card.className = 'expense-item-card';
+        // Agregamos el evento click para resaltar en la gráfica
+        card.onclick = () => focusTransactionInChart(t.date);
         
         const fechaLegible = new Date(t.date).toLocaleDateString();
         const horaLegible = t.time || "N/A";
 
         card.innerHTML = `
             <div class="expense-card-top">
-                <span class="expense-concept">${t.desc}</span>
+                <span class="expense-concept"><b>${t.desc}</b></span>
                 <span class="expense-amount">-${fmt(t.valueVES)} BS</span>
             </div>
             <div class="expense-card-bottom">
                 <div class="expense-date-info">
-                    <span class="expense-date">📅 ${fechaLegible}</span>
-                    <span class="expense-time">🕒 ${horaLegible}</span>
+                    <span>📅 ${fechaLegible}</span>
+                    <span>🕒 ${horaLegible}</span>
                 </div>
-                <span class="expense-badge">Gasto</span>
+                <span class="expense-badge" style="color:var(--primary); font-size:10px;">Ver en gráfica ↑</span>
             </div>
         `;
         container.appendChild(card);
     });
+}
+
+// Función para resaltar el punto en el gráfico de Chart.js
+function focusTransactionInChart(dateIso) {
+    if (!myChart) return;
+
+    const targetDate = new Date(dateIso).toLocaleDateString().split('/')[0]; // Ajustado a cómo guardas los labels
+    const index = myChart.data.labels.indexOf(targetDate);
+
+    if (index !== -1) {
+        // Efecto visual en Chart.js
+        myChart.setActiveElements([{ datasetIndex: 0, index: index }]);
+        myChart.tooltip.setActiveElements([{ datasetIndex: 0, index: index }], { x: 0, y: 0 });
+        myChart.update();
+        
+        // Scroll suave hacia arriba para ver el gráfico
+        document.getElementById('spendingChart').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        showModal("Info", "Este gasto no está en el rango visible de la gráfica actual.", "📊");
+    }
 }
 
 function renderAll() {
@@ -370,5 +408,6 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
+
 
 
