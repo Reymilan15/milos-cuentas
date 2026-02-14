@@ -358,4 +358,29 @@ button {
 #register-form-container {
     width: 100%;
 }
+/* Estilo para indicar que la tarjeta es clickeable */
+.expense-item-card {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.expense-item-card:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+    transform: scale(1.02);
+}
+
+/* Botón flotante o pequeño para cambiar el orden (puedes ponerlo en el HTML) */
+.order-toggle-btn {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    width: auto;
+    float: right;
+}
+
 
