@@ -1,5 +1,7 @@
 
-actions = [];
+var API_URL = "https://milos-cuentas.onrender.com"; 
+
+let transactions = [];
 let budgetVES = 0;
 let spendingLimitVES = 0;
 let rates = { "USD": 1, "EUR": 1, "VES": 1 };
@@ -290,6 +292,7 @@ function showModal(title, msg, icon, isConfirm = false) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); else fetchBCVRate(); };
+
 
 
 
