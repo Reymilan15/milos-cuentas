@@ -44,8 +44,21 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
+    padding: 0 20px;
     height: 70px;
+}
+
+/* --- LOGO EN HEADER (CORREGIDO) --- */
+.app-logo-main {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    transition: transform 0.3s ease;
+}
+
+.app-logo-main:hover {
+    transform: scale(1.1);
 }
 
 /* --- ICONO DE MENÚ --- */
@@ -153,6 +166,35 @@ body {
     display: block;
 }
 
+/* --- AUTH / LOGIN (LOGO CORREGIDO) --- */
+.auth-logo {
+    width: 95px;
+    height: auto;
+    margin: 0 auto 20px;
+    filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4));
+    display: block;
+}
+
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.auth-box {
+    background: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: 28px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
 /* --- BOTONES Y FORMULARIOS --- */
 input, select {
     width: 100%;
@@ -186,6 +228,8 @@ button {
     text-align: center;
     margin-bottom: 30px;
 }
+
+.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; }
 
 /* --- MODAL --- */
 .modal-wrapper {
@@ -239,7 +283,7 @@ button {
     color: var(--text-muted);
 }
 
-/* --- NUEVO: SCROLL Y LÍMITE DE LISTA --- */
+/* --- SCROLL Y LÍMITE DE LISTA --- */
 #stats-individual-list {
     max-height: 500px;
     overflow-y: auto;
@@ -255,4 +299,3 @@ button {
     background: var(--border);
     border-radius: 10px;
 }
-
