@@ -308,7 +308,7 @@ button {
 
 /* Contenedor principal del Login */
 #login-screen {
-    display: flex !important;
+    display: flex;
     justify-content: center !important;
     align-items: center !important;
     min-height: 100vh !important;
@@ -399,5 +399,6 @@ button {
     overflow-y: auto;
     padding-right: 5px;
 }
+
 
 
