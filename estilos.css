@@ -32,7 +32,7 @@ body {
     line-height: 1.5;
 }
 
-/* --- BARRA SUPERIOR FIJA --- */
+/* --- BARRA SUPERIOR --- */
 #app-header-ui {
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--border);
@@ -48,51 +48,106 @@ body {
     height: 70px;
 }
 
-/* --- LOGO EN HEADER (CORREGIDO) --- */
 .app-logo-main {
-    height: 42px;
+    height: 40px;
     width: auto;
-    object-fit: contain;
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-    transition: transform 0.3s ease;
 }
 
-.app-logo-main:hover {
-    transform: scale(1.1);
+/* --- INPUTS Y FORMULARIOS (CORREGIDO PARA VISIBILIDAD) --- */
+input, select {
+    width: 100%;
+    padding: 14px 18px;
+    margin: 8px 0;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(30, 41, 59, 0.7) !important; /* Color de fondo sólido para que se vea */
+    color: var(--text-white) !important;
+    font-size: 1rem;
+    outline: none;
 }
 
-/* --- ICONO DE MENÚ --- */
-.menu-toggle {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
+input::placeholder {
+    color: var(--text-muted);
+}
+
+/* --- BOTONES --- */
+button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 700;
     cursor: pointer;
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
     transition: 0.3s;
+    margin-top: 5px;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-accent { background: var(--accent); color: white; }
+.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+.btn-success { background: var(--success); color: white; }
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.app-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 90px 20px 40px;
+}
+
+/* --- TARJETA DE BALANCE --- */
+.balance-card {
+    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
+    padding: 30px 20px;
+    border-radius: 28px;
+    text-align: center;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.balance-card h2 { font-size: 2.5rem; font-weight: 800; color: white; }
+.balance-card p { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
+
+/* --- SECCIONES DE FORMULARIO --- */
+.form-section {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 24px;
+    margin-bottom: 25px;
     border: 1px solid var(--border);
 }
 
-.menu-toggle span {
-    display: block;
-    width: 20px;
-    height: 2px;
-    background-color: var(--text-white);
-    border-radius: 10px;
+/* --- HISTORIAL DE GASTOS (CORREGIDO) --- */
+#transaction-list {
+    list-style: none;
+    margin-top: 10px;
+}
+
+#transaction-list li {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border);
     transition: 0.3s;
 }
 
-.menu-toggle span:nth-child(2) { 
-    width: 14px; 
-    margin-left: -6px; 
+#transaction-list li span {
+    color: var(--text-white); /* Asegura que el texto se vea */
+    font-weight: 600;
 }
 
-.menu-toggle:hover {
-    background: rgba(99, 102, 241, 0.15);
+#transaction-list li small {
+    color: var(--text-muted);
+    display: block;
+}
+
+.amount-display {
+    font-weight: 800 !important;
+    color: var(--danger) !important; /* Rojo para gastos */
 }
 
 /* --- SIDEBAR --- */
@@ -110,126 +165,7 @@ body {
     border-right: 1px solid var(--border);
 }
 
-.sidebar.active {
-    left: 0;
-    box-shadow: 15px 0 40px rgba(0,0,0,0.7);
-}
-
-.sidebar-header {
-    padding: 30px 20px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border-bottom: 1px solid var(--border);
-}
-
-.user-avatar {
-    font-size: 1.8rem;
-    background: var(--card-bg);
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-}
-
-.sidebar-nav a {
-    color: var(--text-white);
-    text-decoration: none;
-    padding: 14px 18px;
-    border-radius: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: 0.3s;
-    background: rgba(255,255,255,0.02);
-}
-
-.sidebar-nav a:hover {
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--primary);
-    transform: translateX(8px);
-}
-
-.sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 1500;
-    display: none;
-    backdrop-filter: blur(4px);
-}
-
-.sidebar-overlay.active {
-    display: block;
-}
-
-/* --- AUTH / LOGIN (LOGO CORREGIDO) --- */
-.auth-logo {
-    width: 95px;
-    height: auto;
-    margin: 0 auto 20px;
-    filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4));
-    display: block;
-}
-
-.auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.auth-box {
-    background: var(--card-bg);
-    padding: 40px 30px;
-    border-radius: 28px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border);
-    text-align: center;
-}
-
-/* --- BOTONES Y FORMULARIOS --- */
-input, select {
-    width: 100%;
-    padding: 14px 18px;
-    margin: 8px 0;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.6);
-    color: white;
-    font-size: 1rem;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-
-/* --- BALANCE CARD --- */
-.balance-card {
-    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
-    padding: 35px 25px;
-    border-radius: 30px;
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; }
+.sidebar.active { left: 0; }
 
 /* --- MODAL --- */
 .modal-wrapper {
@@ -252,50 +188,40 @@ button {
     border: 1px solid var(--border);
 }
 
-/* --- GASTOS INDIVIDUALES (STATS) --- */
-.expense-item-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.expense-card-top {
-    display: flex;
-    justify-content: space-between;
-}
-
-.expense-amount {
-    font-weight: 800;
-    color: var(--danger);
-}
-
-.expense-card-bottom {
-    display: flex;
-    justify-content: space-between;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-/* --- SCROLL Y LÍMITE DE LISTA --- */
+/* --- STATS INDIVIDUAL LIST --- */
 #stats-individual-list {
     max-height: 500px;
     overflow-y: auto;
     padding-right: 5px;
 }
 
-/* Scrollbar minimalista */
-#stats-individual-list::-webkit-scrollbar {
-    width: 4px;
-}
-
+#stats-individual-list::-webkit-scrollbar { width: 4px; }
 #stats-individual-list::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 10px;
+}
+
+/* --- ESTILOS DE AUTENTICACIÓN --- */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.auth-box {
+    background: var(--card-bg);
+    padding: 35px;
+    border-radius: 28px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+.auth-logo {
+    width: 80px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 10px var(--primary));
 }
