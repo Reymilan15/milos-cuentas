@@ -290,8 +290,25 @@ function showModal(title, msg, icon, isConfirm = false) {
         document.getElementById('modal-cancel-btn').onclick = () => { m.style.display = "none"; res(false); };
     });
 }
+// --- FUNCIÓN ADICIONAL PARA EL BOTÓN RESET ---
+async function resetApp() {
+    if (await showModal("Resetear", "¿Estás seguro de borrar todos los gastos y el presupuesto?", "🗑️", true)) {
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        
+        // Limpiar inputs en la UI
+        document.getElementById('total-budget').value = '';
+        document.getElementById('spending-limit').value = '';
+        
+        renderAll();
+        await syncToCloud();
+        showModal("Hecho", "Datos reseteados correctamente", "🧹");
+    }
+}
 
 window.onload = () => { if (currentUser) entrarALaApp(); else fetchBCVRate(); };
+
 
 
 
