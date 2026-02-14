@@ -1,3 +1,10 @@
+He integrado la nueva funcionalidad de "Desglose Individual de Gastos" dentro de tu lógica actual.
+
+He modificado la función addTransaction para que capture la hora exacta y he creado una nueva función renderIndividualStats que se encarga de pintar esas tarjetas detalladas que pediste en la sección de estadísticas. No se ha borrado ninguna funcionalidad de presupuesto, BCV ni sincronización.
+
+Aquí tienes tu código actualizado:
+
+JavaScript
 
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
@@ -47,14 +54,17 @@ function showSection(sec) {
     document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
     document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
     
-    if(sec === 'stats') renderChart();
+    if(sec === 'stats') {
+        renderChart();
+        renderIndividualStats(); // <--- Nueva llamada para ver los gastos detallados
+    }
     if(sec === 'registros') renderFullHistory();
     
     const sidebar = document.getElementById('sidebar');
     if(sidebar.classList.contains('active')) toggleMenu();
 }
 
-// --- 3. GESTIÓN DE GASTOS (CON ADVERTENCIA DE LÍMITE) ---
+// --- 3. GESTIÓN DE GASTOS ---
 async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
@@ -62,36 +72,33 @@ async function addTransaction() {
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
-    // 1. Conversión según tasa BCV (Hoy 13 de Febrero 2026)
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
     
-    // 2. Cálculos de control
     const totalGastadoAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
     const totalGastadoDespues = totalGastadoAntes + valVES;
     const saldoRestante = budgetVES - totalGastadoDespues;
 
-    // --- MEJORA: ALERTA DE LÍMITE (SIN BLOQUEO FORZOSO) ---
-    // Si el total acumulado supera el límite configurado (ej: 100bs)
     if (spendingLimitVES > 0 && totalGastadoDespues > spendingLimitVES) {
         const exceso = totalGastadoDespues - spendingLimitVES;
         const msg = `Atención: Este gasto supera tu límite de ${fmt(spendingLimitVES)} BS por ${fmt(exceso)} BS.\n\n¿Deseas registrarlo de todas formas?`;
-        
-        // El parámetro 'true' activa los botones de confirmar/cancelar en tu showModal
         const confirmar = await showModal("Límite Superado", msg, "⚠️", true);
-        if (!confirmar) return; // Si el usuario dice que NO, se detiene la función aquí.
+        if (!confirmar) return;
     }
 
-    // --- BLOQUEO POR PRESUPUESTO TOTAL (PARA NO QUEDAR EN DEUDA REAL) ---
     if (totalGastadoDespues > budgetVES) {
         const msgDeuda = `¡Cuidado! Este gasto excede tu presupuesto inicial de ${fmt(budgetVES)} BS.\nQuedarás con saldo negativo.\n\n¿Estás seguro?`;
         const confirmarDeuda = await showModal("Presupuesto Agotado", msgDeuda, "💸", true);
         if (!confirmarDeuda) return;
     }
 
-    // 3. Registro de la transacción (Si el usuario aceptó las alertas)
+    // Captura de hora para el detalle separado
+    const ahora = new Date();
+    const horaExacta = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     transactions.push({ 
         id: Date.now(), 
-        date: new Date().toISOString(), 
+        date: ahora.toISOString(), 
+        time: horaExacta, // Guardamos la hora por separado
         desc, 
         originalAmount: amount, 
         originalCurrency: curr, 
@@ -102,10 +109,42 @@ async function addTransaction() {
     renderAll(); 
     await syncToCloud();
     
-    // Limpiar campos
     document.getElementById('desc').value = '';
     document.getElementById('amount').value = '';
 }
+
+// --- NUEVA FUNCIÓN: RENDERIZAR GASTOS SEPARADOS EN ESTADÍSTICAS ---
+function renderIndividualStats() {
+    const container = document.getElementById('stats-individual-list');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Mostramos los gastos de forma individual y reversa (el último primero)
+    [...transactions].reverse().forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'expense-item-card';
+        
+        const fechaLegible = new Date(t.date).toLocaleDateString();
+        const horaLegible = t.time || "N/A";
+
+        card.innerHTML = `
+            <div class="expense-card-top">
+                <span class="expense-concept">${t.desc}</span>
+                <span class="expense-amount">-${fmt(t.valueVES)} BS</span>
+            </div>
+            <div class="expense-card-bottom">
+                <div class="expense-date-info">
+                    <span class="expense-date">📅 ${fechaLegible}</span>
+                    <span class="expense-time">🕒 ${horaLegible}</span>
+                </div>
+                <span class="expense-badge">Gasto</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
 function renderAll() {
     if(!currentUser) return;
     const totalSpent = transactions.reduce((s, x) => s + x.valueVES, 0);
@@ -133,7 +172,7 @@ function renderAll() {
     }
 }
 
-// --- 4. HISTORIAL Y ESTADÍSTICAS ---
+// --- 4. HISTORIAL Y ESTADÍSTICAS (GRÁFICA) ---
 function renderFullHistory() {
     const body = document.getElementById('full-history-body'); 
     if(!body) return;
@@ -149,10 +188,8 @@ function renderFullHistory() {
     });
 }
 
-// --- REEMPLAZO: RENDERCHART Y UPDATECHARTFILTER ---
 function updateChartFilter(f) {
     currentChartFilter = f;
-    // Actualizar botones visualmente
     document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById('btn-' + f);
     if(activeBtn) activeBtn.classList.add('active');
@@ -174,7 +211,6 @@ function renderChart() {
             dataValues.push(transactions.filter(t => new Date(t.date).toLocaleDateString() === dateStr).reduce((s, x) => s + x.valueVES, 0));
         }
     } else if (currentChartFilter === 'month') {
-        // Agrupar por semanas del mes actual
         labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
         for (let i = 3; i >= 0; i--) {
             const fin = new Date(); fin.setDate(hoy.getDate() - (i * 7));
@@ -217,7 +253,6 @@ function renderChart() {
         }
     });
 }
-// --- FIN DEL REEMPLAZO ---
 
 // --- 5. SISTEMA DE SESIÓN ---
 async function login() {
@@ -342,5 +377,4 @@ function toggleAuth(isReg) {
 }
 
 window.onload = () => { if (currentUser) entrarALaApp(); };
-
 
