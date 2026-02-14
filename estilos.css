@@ -436,5 +436,76 @@ button {
     background: var(--danger); 
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
+/* --- TARJETAS DE GASTO INDIVIDUAL (DESGLOSE) --- */
+.expense-item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.expense-item-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+}
+
+/* Cabecera de la tarjeta: Concepto y Monto */
+.expense-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.expense-concept {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-white);
+    max-width: 65%;
+}
+
+.expense-amount {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--danger); /* Rojo para gastos */
+}
+
+/* Pie de la tarjeta: Fecha y Hora */
+.expense-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.expense-date-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.expense-date, .expense-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Badge de categoría (Opcional por si quieres poner "Comida", "Transporte", etc) */
+.expense-badge {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
 
 
