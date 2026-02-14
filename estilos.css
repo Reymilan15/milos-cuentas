@@ -382,5 +382,22 @@ button {
     width: auto;
     float: right;
 }
+/* Ajuste para evitar que el teclado del móvil tape el login */
+@media (max-height: 700px) {
+    .auth-box {
+        padding: 20px !important;
+    }
+    .auth-logo {
+        width: 60px;
+        margin-bottom: 10px;
+    }
+}
+
+/* Mejora visual del scroll en el historial */
+#transaction-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
 
 
