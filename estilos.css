@@ -400,5 +400,19 @@ button {
     padding-right: 5px;
 }
 
+#stats-individual-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Espacio entre cada tarjeta individual */
+    padding: 10px 0;
+}
+
+.expense-item-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.expense-item-card:active {
+    transform: scale(0.98); /* Efecto de pulsación en móvil */
+}
 
 
