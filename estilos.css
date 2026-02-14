@@ -1,4 +1,3 @@
-
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
@@ -32,7 +31,23 @@ body {
     line-height: 1.5;
 }
 
-/* --- BARRA SUPERIOR FIJA --- */
+/* --- LOGOS (CORREGIDOS) --- */
+.app-logo-main {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.15));
+}
+
+.auth-logo {
+    width: 90px;
+    height: auto;
+    margin: 0 auto 20px;
+    display: block;
+    filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.4));
+}
+
+/* --- HEADER --- */
 #app-header-ui {
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--border);
@@ -44,11 +59,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 20px;
+    padding: 0 20px;
     height: 70px;
 }
 
-/* --- ICONO DE MENÚ (TU DISEÑO ORIGINAL) --- */
+/* --- MENU TOGGLE (ORIGINAL) --- */
 .menu-toggle {
     display: flex;
     flex-direction: column;
@@ -62,7 +77,6 @@ body {
     background: rgba(255, 255, 255, 0.05);
     transition: 0.3s;
     border: 1px solid var(--border);
-    z-index: 2001;
 }
 
 .menu-toggle span {
@@ -83,12 +97,7 @@ body {
     background: rgba(99, 102, 241, 0.15);
 }
 
-.menu-toggle:hover span:nth-child(2) { 
-    width: 20px; 
-    margin-left: 0; 
-}
-
-/* --- SIDEBAR (CON TODAS TUS REGLAS) --- */
+/* --- SIDEBAR (ORIGINAL) --- */
 .sidebar {
     position: fixed;
     left: -300px;
@@ -127,14 +136,6 @@ body {
     border-radius: 12px;
 }
 
-.sidebar-nav {
-    padding: 20px 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex-grow: 1;
-}
-
 .sidebar-nav a {
     color: var(--text-white);
     text-decoration: none;
@@ -167,54 +168,51 @@ body {
     display: block;
 }
 
-/* --- LOGOS --- */
-.app-logo-main {
-    height: 40px;
-    width: auto;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.15));
+/* --- AUTH SCREENS --- */
+#login-screen {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
-.auth-logo {
-    width: 80px;
-    margin: 0 auto 15px;
-    display: block;
-    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
+.auth-box {
+    background: var(--card-bg);
+    padding: 35px;
+    border-radius: 28px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border);
+    text-align: center;
 }
 
-/* --- INPUTS CORREGIDOS (PARA QUE SE VEAN LOS DATOS) --- */
+/* --- BOTONES Y FORMULARIOS (CON VISIBILIDAD) --- */
 input, select {
     width: 100%;
     padding: 14px 18px;
     margin: 8px 0;
     border-radius: 14px;
     border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.8) !important;
+    background: rgba(15, 23, 42, 0.6) !important;
     color: white !important;
     font-size: 1rem;
 }
 
-/* --- BOTONES --- */
 button {
     width: 100%;
     padding: 14px;
-    margin-top: 8px;
     border-radius: 14px;
     border: none;
     font-weight: 700;
     cursor: pointer;
     transition: 0.3s;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
 }
 
 .btn-primary { background: var(--primary); color: white; }
-.btn-success { background: var(--success); color: white; }
-.btn-accent { background: var(--accent); color: white; }
 .btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
-/* --- BALANCE CARD --- */
+/* --- APP CONTENT --- */
 .app-container {
     width: 100%;
     max-width: 500px;
@@ -227,22 +225,21 @@ button {
     border-radius: 30px;
     text-align: center;
     margin-bottom: 30px;
-    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
 }
 
-.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; color: white; }
+.balance-card h2 { font-size: 2.8rem; font-weight: 800; color: white; }
 
-/* --- SECCIONES Y LISTAS (TU HISTORIAL) --- */
 .form-section {
     background: var(--card-bg);
     padding: 25px;
     border-radius: 24px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
     border: 1px solid var(--border);
 }
 
+/* --- HISTORIAL Y GASTOS INDIVIDUALES (STATS) --- */
 #transaction-list li {
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.02);
     padding: 18px;
     border-radius: 20px;
     margin-bottom: 12px;
@@ -252,7 +249,6 @@ button {
     border: 1px solid var(--border);
 }
 
-/* --- GASTOS INDIVIDUALES (STAT CARDS) --- */
 .expense-item-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -265,12 +261,14 @@ button {
 }
 
 .expense-card-top { display: flex; justify-content: space-between; }
-.expense-amount { font-weight: 800; font-size: 1.1rem; color: var(--danger); }
+.expense-amount { font-weight: 800; color: var(--danger); }
 .expense-card-bottom {
     display: flex;
     justify-content: space-between;
     padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 /* --- MODAL --- */
@@ -294,7 +292,7 @@ button {
     border: 1px solid var(--border);
 }
 
-/* --- SCROLL Y LÍMITE --- */
+/* --- SCROLLS --- */
 #stats-individual-list {
     max-height: 500px;
     overflow-y: auto;
