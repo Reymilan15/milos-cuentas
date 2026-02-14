@@ -304,3 +304,58 @@ button {
     background: var(--border);
     border-radius: 10px;
 }
+/* --- FORZAR DISEÑO DE LOGIN Y REGISTER (SIN BORRAR LO ANTERIOR) --- */
+
+/* Contenedor principal del Login */
+#login-screen {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+    background-color: var(--bg-dark);
+}
+
+/* La caja donde están los inputs */
+.auth-box {
+    background: var(--card-bg) !important;
+    padding: 40px !important;
+    border-radius: 28px !important;
+    border: 1px solid var(--border) !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    text-align: center !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* El texto dentro de la caja de login */
+.auth-box h2 {
+    color: var(--text-white) !important;
+    margin-bottom: 10px !important;
+    font-size: 1.8rem !important;
+}
+
+/* Los links de "Crear cuenta" o "Ya tengo cuenta" */
+.auth-box p, .auth-box span {
+    color: var(--text-muted) !important;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 15px;
+    display: block;
+}
+
+/* Botones específicos de Login/Registro */
+#login-form-container button, 
+#register-form-container button {
+    background: var(--primary) !important;
+    color: white !important;
+    margin-top: 20px !important;
+    padding: 16px !important;
+    font-size: 1.1rem !important;
+}
+
+/* Ajuste para que el formulario de registro no se vea pegado */
+#register-form-container {
+    width: 100%;
+}
+
