@@ -32,7 +32,7 @@ body {
     line-height: 1.5;
 }
 
-/* --- BARRA SUPERIOR --- */
+/* --- BARRA SUPERIOR FIJA --- */
 #app-header-ui {
     background: var(--sidebar-bg);
     border-bottom: 1px solid var(--border);
@@ -44,113 +44,51 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 10px 20px;
     height: 70px;
 }
 
-.app-logo-main {
-    height: 40px;
-    width: auto;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-}
-
-/* --- INPUTS Y FORMULARIOS (CORREGIDO PARA VISIBILIDAD) --- */
-input, select {
-    width: 100%;
-    padding: 14px 18px;
-    margin: 8px 0;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: rgba(30, 41, 59, 0.7) !important; /* Color de fondo sólido para que se vea */
-    color: var(--text-white) !important;
-    font-size: 1rem;
-    outline: none;
-}
-
-input::placeholder {
-    color: var(--text-muted);
-}
-
-/* --- BOTONES --- */
-button {
-    width: 100%;
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.3s;
-    margin-top: 5px;
-}
-
-.btn-primary { background: var(--primary); color: white; }
-.btn-accent { background: var(--accent); color: white; }
-.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-.btn-success { background: var(--success); color: white; }
-
-/* --- CONTENEDOR PRINCIPAL --- */
-.app-container {
-    width: 100%;
-    max-width: 500px;
-    padding: 90px 20px 40px;
-}
-
-/* --- TARJETA DE BALANCE --- */
-.balance-card {
-    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
-    padding: 30px 20px;
-    border-radius: 28px;
-    text-align: center;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-.balance-card h2 { font-size: 2.5rem; font-weight: 800; color: white; }
-.balance-card p { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
-
-/* --- SECCIONES DE FORMULARIO --- */
-.form-section {
-    background: var(--card-bg);
-    padding: 20px;
-    border-radius: 24px;
-    margin-bottom: 25px;
-    border: 1px solid var(--border);
-}
-
-/* --- HISTORIAL DE GASTOS (CORREGIDO) --- */
-#transaction-list {
-    list-style: none;
-    margin-top: 10px;
-}
-
-#transaction-list li {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 15px;
-    border-radius: 18px;
-    margin-bottom: 10px;
+/* --- ICONO DE MENÚ (TU DISEÑO ORIGINAL) --- */
+.menu-toggle {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: 0.3s;
     border: 1px solid var(--border);
+    z-index: 2001;
+}
+
+.menu-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: var(--text-white);
+    border-radius: 10px;
     transition: 0.3s;
 }
 
-#transaction-list li span {
-    color: var(--text-white); /* Asegura que el texto se vea */
-    font-weight: 600;
+.menu-toggle span:nth-child(2) { 
+    width: 14px; 
+    margin-left: -6px; 
 }
 
-#transaction-list li small {
-    color: var(--text-muted);
-    display: block;
+.menu-toggle:hover {
+    background: rgba(99, 102, 241, 0.15);
 }
 
-.amount-display {
-    font-weight: 800 !important;
-    color: var(--danger) !important; /* Rojo para gastos */
+.menu-toggle:hover span:nth-child(2) { 
+    width: 20px; 
+    margin-left: 0; 
 }
 
-/* --- SIDEBAR --- */
+/* --- SIDEBAR (CON TODAS TUS REGLAS) --- */
 .sidebar {
     position: fixed;
     left: -300px;
@@ -165,7 +103,175 @@ button {
     border-right: 1px solid var(--border);
 }
 
-.sidebar.active { left: 0; }
+.sidebar.active {
+    left: 0;
+    box-shadow: 15px 0 40px rgba(0,0,0,0.7);
+}
+
+.sidebar-header {
+    padding: 30px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.user-avatar {
+    font-size: 1.8rem;
+    background: var(--card-bg);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.sidebar-nav {
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.sidebar-nav a {
+    color: var(--text-white);
+    text-decoration: none;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: 0.3s;
+    background: rgba(255,255,255,0.02);
+}
+
+.sidebar-nav a:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+    transform: translateX(8px);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1500;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* --- LOGOS --- */
+.app-logo-main {
+    height: 40px;
+    width: auto;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.15));
+}
+
+.auth-logo {
+    width: 80px;
+    margin: 0 auto 15px;
+    display: block;
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
+}
+
+/* --- INPUTS CORREGIDOS (PARA QUE SE VEAN LOS DATOS) --- */
+input, select {
+    width: 100%;
+    padding: 14px 18px;
+    margin: 8px 0;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.8) !important;
+    color: white !important;
+    font-size: 1rem;
+}
+
+/* --- BOTONES --- */
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-accent { background: var(--accent); color: white; }
+.btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+/* --- BALANCE CARD --- */
+.app-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 90px 20px 40px;
+}
+
+.balance-card {
+    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
+    padding: 35px 25px;
+    border-radius: 30px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+}
+
+.balance-card h2 { font-size: 2.8rem; margin: 10px 0; font-weight: 800; color: white; }
+
+/* --- SECCIONES Y LISTAS (TU HISTORIAL) --- */
+.form-section {
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 24px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+}
+
+#transaction-list li {
+    background: var(--card-bg);
+    padding: 18px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border);
+}
+
+/* --- GASTOS INDIVIDUALES (STAT CARDS) --- */
+.expense-item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.expense-card-top { display: flex; justify-content: space-between; }
+.expense-amount { font-weight: 800; font-size: 1.1rem; color: var(--danger); }
+.expense-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
 
 /* --- MODAL --- */
 .modal-wrapper {
@@ -188,7 +294,7 @@ button {
     border: 1px solid var(--border);
 }
 
-/* --- STATS INDIVIDUAL LIST --- */
+/* --- SCROLL Y LÍMITE --- */
 #stats-individual-list {
     max-height: 500px;
     overflow-y: auto;
@@ -199,29 +305,4 @@ button {
 #stats-individual-list::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 10px;
-}
-
-/* --- ESTILOS DE AUTENTICACIÓN --- */
-.auth-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.auth-box {
-    background: var(--card-bg);
-    padding: 35px;
-    border-radius: 28px;
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-    border: 1px solid var(--border);
-}
-
-.auth-logo {
-    width: 80px;
-    margin-bottom: 20px;
-    filter: drop-shadow(0 0 10px var(--primary));
 }
