@@ -1,17 +1,20 @@
 :root {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --success: #22c55e;
-    --danger: #ef4444;
+    /* Paleta Luxury */
+    --primary: #D4AF37;       /* Dorado Principal */
+    --primary-dark: #aa8a2e;  /* Dorado Sombra */
+    --success: #00ff88;       /* Verde Neón para Ingresos */
+    --danger: #ff4d4d;        /* Rojo Vibrante para Egresos */
     --warning: #f59e0b;
-    --accent: #06b6d4;
-    --bg-dark: #0f172a;
-    --card-bg: #1e293b;
-    --sidebar-bg: #111827;
-    --text-white: #f8fafc;
-    --text-muted: #94a3b8;
-    --glass: rgba(30, 41, 59, 0.75);
-    --border: rgba(255, 255, 255, 0.08);
+    --accent: #D4AF37;
+    
+    /* Fondos */
+    --bg-dark: #000000;       /* Negro Puro */
+    --card-bg: #0a0a0a;       /* Negro Carbón para tarjetas */
+    --sidebar-bg: #050505;
+    --text-white: #ffffff;
+    --text-muted: #666666;
+    --glass: rgba(10, 10, 10, 0.8);
+    --border: rgba(212, 175, 55, 0.2); /* Bordes Dorados sutiles */
 }
 
 * {
@@ -149,10 +152,10 @@ body {
     background: rgba(255,255,255,0.02);
 }
 
-.sidebar-nav a:hover {
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--primary);
-    transform: translateX(8px);
+sidebar-nav a:hover {
+    background: rgba(212, 175, 55, 0.1) !important;
+    color: var(--primary) !important;
+    border-left: 4px solid var(--primary);
 }
 
 .sidebar-overlay {
@@ -189,14 +192,15 @@ body {
 
 /* --- BOTONES Y FORMULARIOS (CON VISIBILIDAD) --- */
 input, select {
-    width: 100%;
-    padding: 14px 18px;
-    margin: 8px 0;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: rgba(15, 23, 42, 0.6) !important;
+    background: #111111 !important;
+    border: 1px solid var(--border) !important;
     color: white !important;
-    font-size: 1rem;
+}
+
+input:focus, select:focus {
+    border-color: var(--primary) !important;
+    outline: none;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
 }
 
 button {
@@ -209,7 +213,16 @@ button {
     transition: 0.3s;
 }
 
-.btn-primary { background: var(--primary); color: white; }
+.btn-primary { 
+    background: var(--primary) !important; 
+    color: #000 !important; /* Texto negro sobre fondo dorado para contraste */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.btn-primary:hover {
+    background: var(--primary-dark) !important;
+    transform: translateY(-2px);
+}
 .btn-reset { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
 
 /* --- APP CONTENT --- */
@@ -220,14 +233,21 @@ button {
 }
 
 .balance-card {
-    background: linear-gradient(135deg, var(--primary-dark), #7c3aed);
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%) !important;
+    border: 1px solid var(--primary);
     padding: 35px 25px;
     border-radius: 30px;
     text-align: center;
     margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.1);
 }
 
-.balance-card h2 { font-size: 2.8rem; font-weight: 800; color: white; }
+.balance-card h2 { 
+    font-size: 2.8rem; 
+    font-weight: 800; 
+    color: var(--primary) !important; /* Saldo siempre en Dorado */
+    text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}
 
 .form-section {
     background: var(--card-bg);
@@ -238,15 +258,23 @@ button {
 }
 
 /* --- HISTORIAL Y GASTOS INDIVIDUALES (STATS) --- */
-#transaction-list li {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 18px;
-    border-radius: 20px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid var(--border);
+/* --- TARJETAS DE TRANSACCIONES Y STATS --- */
+#transaction-list li, .expense-item-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    transition: 0.3s ease;
+}
+
+#transaction-list li:hover, .expense-item-card:hover {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+}
+/* Color para los montos de gastos */
+.expense-amount, #transaction-list li strong {
+    color: var(--danger) !important;
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
 }
 
 .expense-item-card {
@@ -284,12 +312,8 @@ button {
 }
 
 .modal-content {
-    background: var(--card-bg);
-    padding: 30px;
-    border-radius: 28px;
-    max-width: 380px;
-    text-align: center;
-    border: 1px solid var(--border);
+    border: 2px solid var(--primary) !important;
+    background: var(--bg-dark) !important;
 }
 
 /* --- SCROLLS --- */
@@ -299,9 +323,9 @@ button {
     padding-right: 5px;
 }
 
-#stats-individual-list::-webkit-scrollbar { width: 4px; }
-#stats-individual-list::-webkit-scrollbar-thumb {
-    background: var(--border);
+#stats-individual-list::-webkit-scrollbar-thumb,
+#transaction-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
     border-radius: 10px;
 }
 /* --- FORZAR DISEÑO DE LOGIN Y REGISTER (SIN BORRAR LO ANTERIOR) --- */
@@ -393,12 +417,6 @@ button {
     }
 }
 
-/* Mejora visual del scroll en el historial */
-#transaction-list {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
 
 #stats-individual-list {
     display: flex;
@@ -414,5 +432,6 @@ button {
 .expense-item-card:active {
     transform: scale(0.98); /* Efecto de pulsación en móvil */
 }
+
 
 
