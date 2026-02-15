@@ -259,17 +259,36 @@ button {
 
 /* --- HISTORIAL Y GASTOS INDIVIDUALES (STATS) --- */
 /* --- TARJETAS DE TRANSACCIONES Y STATS --- */
-#transaction-list li, .expense-item-card {
-    background: var(--card-bg) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 16px !important;
-    transition: 0.3s ease;
+/* --- AJUSTE DE LA LISTA DE INICIO (VIP LOOK) --- */
+#transaction-list {
+    max-height: 450px;
+    overflow-y: auto;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Separación elegante entre transacciones */
 }
 
-#transaction-list li:hover, .expense-item-card:hover {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+#transaction-list li {
+    background: linear-gradient(145deg, #0f0f0f, #050505) !important;
+    border: 1px solid rgba(212, 175, 55, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 15px 20px !important;
+    margin-bottom: 0 !important; /* Usamos gap en el contenedor */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+    position: relative;
 }
+
+/* Efecto de línea lateral dorada solo para el inicio */
+#transaction-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height
 /* Color para los montos de gastos */
 .expense-amount, #transaction-list li strong {
     color: var(--danger) !important;
@@ -432,6 +451,7 @@ button {
 .expense-item-card:active {
     transform: scale(0.98); /* Efecto de pulsación en móvil */
 }
+
 
 
 
