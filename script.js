@@ -298,19 +298,47 @@ async function syncToCloud() {
 // --- 7. UTILIDADES ---
 function renderAll() {
     if(!currentUser) return;
+    
     const total = transactions.reduce((s, x) => s + x.valueVES, 0);
     const rem = budgetVES - total;
     const list = document.getElementById('transaction-list');
+    
     if(list) {
         list.innerHTML = '';
+        // Mostramos los últimos 8 registros
         [...transactions].reverse().slice(0, 8).forEach(t => {
             const li = document.createElement('li');
-            li.innerHTML = `<div><b>${t.desc}</b></div><div style="text-align:right"><strong>-${fmt(t.valueVES)} BS</strong><br><span onclick="deleteTransaction(${t.id})" style="color:var(--danger); cursor:pointer; font-size:10px;">Eliminar</span></div>`;
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            li.style.alignItems = "center";
+            li.style.padding = "10px 0";
+            li.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+
+            // El emoji de la categoría o uno por defecto
+            const catEmoji = t.category || "📦";
+
+            li.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <b style="color: white; font-size: 0.95rem;">${t.desc}</b>
+                    <span style="font-size: 0.7rem; color: var(--primary); font-weight: 700; text-transform: uppercase;">
+                        ${catEmoji} ${t.category || 'Otros'}
+                    </span>
+                </div>
+                <div style="text-align:right">
+                    <strong style="color: white; display: block;">-${fmt(t.valueVES)} BS</strong>
+                    <span onclick="deleteTransaction(${t.id})" style="color:var(--danger); cursor:pointer; font-size:10px; font-weight:bold;">Eliminar</span>
+                </div>
+            `;
             list.appendChild(li);
         });
     }
+
+    // Actualización del saldo superior
     const val = (currentView === "USD") ? rem / rates.USD : (currentView === "EUR") ? rem / rates.EUR : rem;
-    document.getElementById('remaining-display').innerText = `${fmt(val)} ${currentView}`;
+    const displayElement = document.getElementById('remaining-display');
+    if (displayElement) {
+        displayElement.innerText = `${fmt(val)} ${currentView}`;
+    }
 }
 
 function renderFullHistory() {
@@ -453,6 +481,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
