@@ -326,7 +326,6 @@ async function resetApp() {
         showModal("Hecho", "Datos reseteados correctamente", "🧹");
     }
 }
-/ --- PEGA ESTO AL FINAL DE TU SCRIPT.JS ---
 
 function renderCategoryAnalysis() {
     const analysisContainer = document.getElementById('stats-panel');
@@ -390,6 +389,7 @@ window.onload = () => {
         fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
     }
 };
+
 
 
 
