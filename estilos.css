@@ -331,17 +331,22 @@ button {
 .modal-wrapper {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    display: none;
+    background: rgba(0, 0, 0, 0.9); /* Fondo muy oscuro */
+    backdrop-filter: blur(8px);    /* Desenfoque profesional */
+    display: none;                 /* Oculto por defecto */
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    backdrop-filter: blur(10px);
 }
 
 .modal-content {
-    border: 2px solid var(--primary) !important;
-    background: var(--bg-dark) !important;
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 350px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
 }
 
 /* --- SCROLLS --- */
@@ -460,6 +465,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
