@@ -370,29 +370,77 @@ function renderCategoryAnalysis() {
     const analysisContainer = document.getElementById('stats-panel');
     if (!analysisContainer || transactions.length === 0) return;
 
+    // 1. Agrupar totales por categoría
     const totals = {};
     transactions.forEach(t => {
         const cat = t.category || "Otros";
         totals[cat] = (totals[cat] || 0) + t.valueVES;
     });
 
+    const gastoTotal = transactions.reduce((s, t) => s + t.valueVES, 0);
+
+    // 2. Encontrar la categoría principal para el resumen
     let maxCat = "", maxMonto = 0;
     for (const [cat, monto] of Object.entries(totals)) {
         if (monto > maxMonto) { maxMonto = monto; maxCat = cat; }
     }
 
-    const gastoTotal = transactions.reduce((s, t) => s + t.valueVES, 0);
-    const porcentaje = ((maxMonto / gastoTotal) * 100).toFixed(1);
-
+    // 3. Renderizar el contenedor principal con el botón
     analysisContainer.innerHTML = `
-        <div class="analysis-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(30, 41, 59, 1)); padding: 20px; border-radius: 20px; border: 1px solid var(--primary); margin-top: 15px;">
-            <h3 style="color: white; font-size: 1rem; margin-bottom: 10px;">🧐 Análisis de Gastos</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted);">Mayor gasto en: <b style="color:var(--primary)">${maxCat}</b> (${fmt(maxMonto)} BS)</p>
-            <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin: 10px 0;">
-                <div style="background: var(--primary); width: ${porcentaje}%; height: 100%; border-radius: 10px;"></div>
+        <div class="analysis-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(30, 41, 59, 1)); padding: 20px; border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.3); margin-top: 15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="color: white; font-size: 1.1rem; margin:0;">🧐 Análisis de Gastos</h3>
+                <button onclick="toggleCategoryDetails()" id="btn-details" style="background:var(--primary); color:white; border:none; padding:6px 12px; border-radius:8px; font-size:0.8rem; cursor:pointer; font-weight:600;">
+                    Ver Detalles
+                </button>
             </div>
+            
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom:5px;">Principal gasto: <b style="color:var(--primary)">${maxCat}</b></p>
+            <div style="font-size: 1.2rem; font-weight: 800; color: white;">${fmt(maxMonto)} BS</div>
+            
+            <div id="category-details-list" style="display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); pt: 15px; flex-direction: column; gap: 12px;">
+                </div>
         </div>
     `;
+
+    // 4. Generar las mini-tarjetas detalladas dentro del contenedor oculto
+    const detailsList = document.getElementById('category-details-list');
+    Object.entries(totals).sort((a,b) => b[1] - a[1]).forEach(([cat, monto]) => {
+        const porcentaje = ((monto / gastoTotal) * 100).toFixed(1);
+        const detailItem = document.createElement('div');
+        detailItem.style.cssText = `
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        `;
+        detailItem.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="color:white; font-weight:600; font-size:0.9rem;">${cat}</span>
+                <span style="color:var(--primary); font-weight:700; font-size:0.9rem;">${fmt(monto)} BS</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); height: 6px; border-radius: 10px; overflow:hidden;">
+                <div style="background: var(--primary); width: ${porcentaje}%; height: 100%; border-radius: 10px;"></div>
+            </div>
+            <div style="text-align:right; font-size:0.7rem; color:var(--text-muted); margin-top:4px;">${porcentaje}% del total</div>
+        `;
+        detailsList.appendChild(detailItem);
+    });
+}
+
+// 5. Función para abrir/cerrar el detalle (Añádela al final de tu script.js)
+function toggleCategoryDetails() {
+    const list = document.getElementById('category-details-list');
+    const btn = document.getElementById('btn-details');
+    if (list.style.display === 'none') {
+        list.style.display = 'flex';
+        btn.innerText = 'Cerrar';
+        btn.style.background = 'rgba(255,255,255,0.1)';
+    } else {
+        list.style.display = 'none';
+        btn.innerText = 'Ver Detalles';
+        btn.style.background = 'var(--primary)';
+    }
 }
 
 window.onload = () => {
@@ -405,6 +453,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
