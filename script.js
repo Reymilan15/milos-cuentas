@@ -59,7 +59,7 @@ function showSection(sec) {
     if(sidebar && sidebar.classList.contains('active')) toggleMenu();
 }
 
-// --- 3. GESTIÓN DE GASTOS ---
+// --- 3. GESTIÓN DE GASTOS (CORREGIDA Y RESTRICTIVA) ---
 async function addTransaction() {
     const descInput = document.getElementById('desc');
     const amountInput = document.getElementById('amount');
@@ -76,26 +76,23 @@ async function addTransaction() {
         return;
     }
 
-    // Calcular valor en Bolívares
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
     
-    // Lógica de presupuesto (RECUPERADA Y MEJORADA)
     const totalGastadoAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
     const saldoDisponibleReal = budgetVES - totalGastadoAntes;
     const totalDespuesDeEsteGasto = totalGastadoAntes + valVES;
 
-    // --- REGLA 1: BLOQUEO TOTAL (Si el gasto supera lo que tienes en caja) ---
+    // --- REGLA 1: BLOQUEO TOTAL (Gasto > Saldo disponible) ---
     if (valVES > saldoDisponibleReal) {
         await showModal("Gasto Rechazado", `No tienes saldo suficiente. El gasto es de ${fmt(valVES)} BS y solo te quedan ${fmt(saldoDisponibleReal)} BS.`, "🚫");
         return; 
     }
 
-    // --- REGLA 2: ADVERTENCIA DE LÍMITE (Si superas el límite configurado) ---
+    // --- REGLA 2: ADVERTENCIA DE LÍMITE ---
     if (spendingLimitVES > 0 && totalDespuesDeEsteGasto > spendingLimitVES) {
         const exceso = totalDespuesDeEsteGasto - spendingLimitVES;
         const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar de todas formas?`;
         
-        // El await aquí es válido porque la función es async
         const confirma = await showModal("Límite Superado", msg, "⚠️", true);
         if (!confirma) return;
     }
@@ -120,20 +117,6 @@ async function addTransaction() {
     
     descInput.value = '';
     amountInput.value = '';
-}
-
-    renderAll(); 
-    await syncToCloud();
-    
-    // Limpiar campos
-    document.getElementById('desc').value = '';
-    document.getElementById('amount').value = '';
-}
-
-    renderAll(); 
-    await syncToCloud();
-    document.getElementById('desc').value = '';
-    document.getElementById('amount').value = '';
 }
 
 // --- 4. ESTADÍSTICAS E INTERACCIÓN ---
