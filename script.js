@@ -385,7 +385,7 @@ function showModal(title, msg, icon, isConfirm = false) {
     });
 }
 
-async functionfunction resetApp() {
+async function resetApp() {
     // Primero nos aseguramos de que cualquier otro modal esté cerrado
     const customModal = document.getElementById('custom-modal');
     if (customModal) customModal.style.setProperty('display', 'none', 'important');
@@ -516,6 +516,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
