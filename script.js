@@ -385,18 +385,23 @@ function showModal(title, msg, icon, isConfirm = false) {
     });
 }
 
-async function resetApp() {
+async functionfunction resetApp() {
+    // Primero nos aseguramos de que cualquier otro modal esté cerrado
+    const customModal = document.getElementById('custom-modal');
+    if (customModal) customModal.style.setProperty('display', 'none', 'important');
+
+    // Ahora mostramos el de confirmación de reset
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        modalConfirm.style.display = 'flex';
+        modalConfirm.style.setProperty('display', 'flex', 'important');
     }
 }
 
-// Función para cerrar el modal de confirmación
+// Función para cerrar
 function closeConfirmModal() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        modalConfirm.style.display = 'none';
+        modalConfirm.style.setProperty('display', 'none', 'important');
     }
 }
 
@@ -511,6 +516,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
