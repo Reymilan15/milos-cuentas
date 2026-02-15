@@ -63,19 +63,13 @@ async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const curr = document.getElementById('currency').value;
+    const category = document.getElementById('category-select').value; // Capturar categoría
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
-    const totalAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
-    const totalDespues = totalAntes + valVES;
-    const saldoRestante = budgetVES - totalDespues;
-
-    if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
-        const exceso = totalDespues - spendingLimitVES;
-        const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar?`;
-        if (!(await showModal("Límite Superado", msg, "⚠️", true))) return;
-    }
+    
+    // ... (mantener lógica de límites que ya tienes)
 
     const ahora = new Date();
     transactions.push({ 
@@ -83,10 +77,10 @@ async function addTransaction() {
         date: ahora.toISOString(), 
         time: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         desc, 
+        category, // Guardar la categoría
         originalAmount: amount, 
         originalCurrency: curr, 
-        valueVES: valVES, 
-        balanceAtMoment: saldoRestante 
+        valueVES: valVES
     });
 
     renderAll(); 
@@ -104,40 +98,31 @@ function toggleStatsOrder() {
 function renderIndividualStats() {
     const container = document.getElementById('stats-individual-list');
     if (!container) return;
+    container.innerHTML = '';
     
-    container.innerHTML = ''; // Limpiamos la lista actual
-    
-    // Hacemos una copia de las transacciones para no alterar la base de datos original
-    let sorted = [...transactions]; 
+    let sorted = [...transactions];
+    sorted.sort((a, b) => statsOrderAsc ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date));
 
-    // Aplicamos el orden (Ascendente o Descendente)
-    sorted.sort((a, b) => {
-        return statsOrderAsc 
-            ? new Date(a.date) - new Date(b.date) 
-            : new Date(b.date) - new Date(a.date);
-    });
-
-    // Creamos una tarjeta INDIVIDUAL por cada gasto
     sorted.forEach(t => {
         const card = document.createElement('div');
         card.className = 'expense-item-card';
-        
-        // Al hacer clic en la tarjeta, nos lleva a ver ese punto en la gráfica
         card.onclick = () => focusTransactionInChart(t.date);
         
+        // Asignar un emoji según categoría por si no viene en el registro viejo
+        const catEmoji = t.category ? t.category : "📦";
+
         card.innerHTML = `
-            <div class="expense-card-top" style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; color: var(--text-white);">${t.desc}</span>
-                <span class="expense-amount" style="color: var(--danger); font-weight: 800;">
-                    -${fmt(t.valueVES)} BS
-                </span>
+            <div class="expense-card-top">
+                <div style="display:flex; flex-direction:column">
+                    <span style="font-size:0.7rem; color:var(--primary); font-weight:bold; text-transform:uppercase">${catEmoji}</span>
+                    <span style="font-weight:700">${t.desc}</span>
+                </div>
+                <span style="color:var(--danger); font-weight:800">-${fmt(t.valueVES)} BS</span>
             </div>
-            <div class="expense-card-bottom" style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 8px;">
-                <span>📅 ${new Date(t.date).toLocaleDateString()}</span>
-                <span>🕒 ${t.time || '--:--'}</span>
-                <span style="color: var(--primary); font-weight: 600;">Ver en gráfica ↑</span>
-            </div>
-        `;
+            <div class="expense-card-bottom" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
+                <span>📅 ${new Date(t.date).toLocaleDateString()} 🕒 ${t.time || ''}</span>
+                <span style="color:var(--primary)">Ver en gráfico ↑</span>
+            </div>`;
         container.appendChild(card);
     });
 }
@@ -185,7 +170,26 @@ function renderChart() {
         options: { responsive: true, maintainAspectRatio: false }
     });
 }
+function renderCategorySummary() {
+    const panel = document.getElementById('stats-panel');
+    if (!panel) return;
 
+    const totals = {};
+    transactions.forEach(t => {
+        const cat = t.category || "Otros";
+        totals[cat] = (totals[cat] || 0) + t.valueVES;
+    });
+
+    panel.innerHTML = '<h3 style="color:white; font-size:1rem; margin-bottom:10px;">Gasto por Categoría</h3>';
+    for (const [cat, monto] of Object.entries(totals)) {
+        panel.innerHTML += `
+            <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px 15px; border-radius:12px; margin-bottom:5px; border:1px solid var(--border)">
+                <span>${cat}</span>
+                <span style="font-weight:bold">${fmt(monto)} BS</span>
+            </div>
+        `;
+    }
+}
 // --- 6. AUTENTICACIÓN Y NUBE ---
 async function login() {
     const identifier = document.getElementById('username').value;
@@ -335,6 +339,7 @@ window.onload = () => {
         fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
     }
 };
+
 
 
 
