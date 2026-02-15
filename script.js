@@ -61,37 +61,45 @@ function showSection(sec) {
 
 // --- 3. GESTIÓN DE GASTOS ---
 async function addTransaction() {
-    const desc = document.getElementById('desc').value;
-    const amount = parseFloat(document.getElementById('amount').value);
-    const curr = document.getElementById('currency').value;
-    const category = document.getElementById('category-select') ? document.getElementById('category-select').value : "Otros";
+    const descInput = document.getElementById('desc');
+    const amountInput = document.getElementById('amount');
+    const currencyInput = document.getElementById('currency');
+    const categoryInput = document.getElementById('category-select');
 
-    if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
+    const desc = descInput.value;
+    const amount = parseFloat(amountInput.value);
+    const curr = currencyInput.value;
+    const category = categoryInput ? categoryInput.value : "Otros";
+
+    if (!desc || isNaN(amount)) {
+        await showModal("Error", "Datos incompletos", "🛒");
+        return;
+    }
 
     // Calcular valor en Bolívares
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
     
-    // Cálculo de totales
+    // Lógica de presupuesto (RECUPERADA Y MEJORADA)
     const totalGastadoAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
     const saldoDisponibleReal = budgetVES - totalGastadoAntes;
     const totalDespuesDeEsteGasto = totalGastadoAntes + valVES;
 
-    // --- REGLA 1: BLOQUEO TOTAL (Si no hay dinero suficiente) ---
+    // --- REGLA 1: BLOQUEO TOTAL (Si el gasto supera lo que tienes en caja) ---
     if (valVES > saldoDisponibleReal) {
-        showModal("Gasto Rechazado", `No puedes gastar ${fmt(valVES)} BS porque solo te quedan ${fmt(saldoDisponibleReal)} BS en tu presupuesto total.`, "🚫");
-        return; // Detiene la función por completo
+        await showModal("Gasto Rechazado", `No tienes saldo suficiente. El gasto es de ${fmt(valVES)} BS y solo te quedan ${fmt(saldoDisponibleReal)} BS.`, "🚫");
+        return; 
     }
 
-    // --- REGLA 2: ADVERTENCIA DE LÍMITE (Si superas el límite fijado pero tienes dinero) ---
+    // --- REGLA 2: ADVERTENCIA DE LÍMITE (Si superas el límite configurado) ---
     if (spendingLimitVES > 0 && totalDespuesDeEsteGasto > spendingLimitVES) {
         const exceso = totalDespuesDeEsteGasto - spendingLimitVES;
-        const msg = `Atención: Este gasto hará que superes tu límite establecido por ${fmt(exceso)} BS. ¿Deseas registrarlo de todas formas?`;
+        const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar de todas formas?`;
         
-        // Si el usuario presiona "Cancelar", se detiene
-        if (!(await showModal("Límite Superado", msg, "⚠️", true))) return;
+        // El await aquí es válido porque la función es async
+        const confirma = await showModal("Límite Superado", msg, "⚠️", true);
+        if (!confirma) return;
     }
 
-    // Si pasó las reglas anteriores, se registra el gasto
     const ahora = new Date();
     const saldoRestanteFinal = budgetVES - totalDespuesDeEsteGasto;
 
@@ -106,6 +114,13 @@ async function addTransaction() {
         valueVES: valVES, 
         balanceAtMoment: saldoRestanteFinal 
     });
+
+    renderAll(); 
+    await syncToCloud();
+    
+    descInput.value = '';
+    amountInput.value = '';
+}
 
     renderAll(); 
     await syncToCloud();
@@ -379,6 +394,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
