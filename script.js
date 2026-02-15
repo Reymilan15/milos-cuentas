@@ -68,20 +68,33 @@ async function addTransaction() {
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
+    // Calcular valor en Bolívares
     let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
     
-    // Lógica de saldo y límites (RECUPERADA)
-    const totalAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
-    const totalDespues = totalAntes + valVES;
-    const saldoRestante = budgetVES - totalDespues;
+    // Cálculo de totales
+    const totalGastadoAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
+    const saldoDisponibleReal = budgetVES - totalGastadoAntes;
+    const totalDespuesDeEsteGasto = totalGastadoAntes + valVES;
 
-    if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
-        const exceso = totalDespues - spendingLimitVES;
-        const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar de todas formas?`;
+    // --- REGLA 1: BLOQUEO TOTAL (Si no hay dinero suficiente) ---
+    if (valVES > saldoDisponibleReal) {
+        showModal("Gasto Rechazado", `No puedes gastar ${fmt(valVES)} BS porque solo te quedan ${fmt(saldoDisponibleReal)} BS en tu presupuesto total.`, "🚫");
+        return; // Detiene la función por completo
+    }
+
+    // --- REGLA 2: ADVERTENCIA DE LÍMITE (Si superas el límite fijado pero tienes dinero) ---
+    if (spendingLimitVES > 0 && totalDespuesDeEsteGasto > spendingLimitVES) {
+        const exceso = totalDespuesDeEsteGasto - spendingLimitVES;
+        const msg = `Atención: Este gasto hará que superes tu límite establecido por ${fmt(exceso)} BS. ¿Deseas registrarlo de todas formas?`;
+        
+        // Si el usuario presiona "Cancelar", se detiene
         if (!(await showModal("Límite Superado", msg, "⚠️", true))) return;
     }
 
+    // Si pasó las reglas anteriores, se registra el gasto
     const ahora = new Date();
+    const saldoRestanteFinal = budgetVES - totalDespuesDeEsteGasto;
+
     transactions.push({ 
         id: Date.now(), 
         date: ahora.toISOString(), 
@@ -91,8 +104,16 @@ async function addTransaction() {
         originalAmount: amount, 
         originalCurrency: curr, 
         valueVES: valVES, 
-        balanceAtMoment: saldoRestante 
+        balanceAtMoment: saldoRestanteFinal 
     });
+
+    renderAll(); 
+    await syncToCloud();
+    
+    // Limpiar campos
+    document.getElementById('desc').value = '';
+    document.getElementById('amount').value = '';
+}
 
     renderAll(); 
     await syncToCloud();
@@ -358,6 +379,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
