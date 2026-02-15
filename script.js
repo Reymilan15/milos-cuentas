@@ -131,31 +131,59 @@ function renderIndividualStats() {
     container.innerHTML = '';
     
     let sorted = [...transactions];
+    // Ordenamos por fecha (más reciente primero por defecto)
     sorted.sort((a, b) => statsOrderAsc ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date));
 
     sorted.forEach(t => {
         const card = document.createElement('div');
+        // Aplicamos estilos directos para asegurar la separación visual
         card.className = 'expense-item-card';
-        card.onclick = () => focusTransactionInChart(t.date);
-        
+        card.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid var(--primary);
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.2s;
+        `;
+
         const catEmoji = t.category || "📦";
 
         card.innerHTML = `
-            <div class="expense-card-top">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div style="display:flex; flex-direction:column">
-                    <span style="font-size:0.7rem; color:var(--primary); font-weight:bold; text-transform:uppercase">${catEmoji}</span>
-                    <span style="font-weight:700">${t.desc}</span>
+                    <span style="font-size:0.75rem; color:var(--primary); font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">
+                        ${catEmoji} ${t.category || 'Otros'}
+                    </span>
+                    <span style="font-weight:700; font-size:1.1rem; color: #fff; margin-top:2px;">${t.desc}</span>
                 </div>
-                <span style="color:var(--danger); font-weight:800">-${fmt(t.valueVES)} BS</span>
+                <div style="text-align:right">
+                    <span style="color:var(--danger); font-weight:800; font-size:1.1rem;">-${fmt(t.valueVES)} BS</span>
+                </div>
             </div>
-            <div class="expense-card-bottom" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
-                <span>📅 ${new Date(t.date).toLocaleDateString()} 🕒 ${t.time || ''}</span>
-                <span style="color:var(--primary)">Ver en gráfico ↑</span>
-            </div>`;
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.8rem; color:var(--text-muted);">
+                <span>📅 ${new Date(t.date).toLocaleDateString()} <span style="margin-left:8px;">🕒 ${t.time || ''}</span></span>
+                <span style="color:var(--success); font-weight:600; background:rgba(34, 197, 94, 0.1); padding:2px 8px; border-radius:4px;">
+                    Saldo: ${fmt(t.balanceAtMoment || 0)} BS
+                </span>
+            </div>
+        `;
+        
+        // Efecto visual al hacer clic
+        card.onclick = () => {
+            focusTransactionInChart(t.date);
+            card.style.transform = "scale(0.98)";
+            setTimeout(() => card.style.transform = "scale(1)", 100);
+        };
+        
         container.appendChild(card);
     });
 }
-
 function focusTransactionInChart(dateIso) {
     if (!myChart) return;
     const targetDate = new Date(dateIso).toLocaleDateString().split('/')[0];
@@ -377,6 +405,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
