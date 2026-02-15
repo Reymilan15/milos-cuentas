@@ -138,42 +138,52 @@
             <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
         </div>
 
-        <div id="section-stats" style="display: none;">
-            <header><h1 style="text-align: center; margin-bottom: 20px;">Estadísticas</h1></header>
-            
-            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                <button onclick="updateChartFilter('7days')" class="btn-filter active" id="btn-7days">Día</button>
-                <button onclick="updateChartFilter('month')" class="btn-filter" id="btn-month">Mes</button>
-                <button onclick="updateChartFilter('year')" class="btn-filter" id="btn-year">Año</button>
-            </div>
-
-            <div class="form-section" style="height: 300px; padding: 15px;">
-                <div class="chart-legend">
-                    <div class="legend-item">
-                        <span class="legend-color color-income"></span>
-                        <span>Ingresos</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-color color-expense"></span>
-                        <span>Gastos</span>
-                    </div>
-                </div>
-                <canvas id="spendingChart"></canvas>
-            </div>
-
-            <div id="stats-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;">
-                    <h3 style="font-size: 1rem; color: white;">Detalle de Gastos</h3>
-                    <button class="order-toggle-btn" onclick="toggleStatsOrder()" style="width: auto; margin: 0; padding: 5px 12px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-white); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">⇅ Ordenar</button>
-                </div>
-                <div id="stats-individual-list">
-                    </div>
-            </div>
-
-            <div id="stats-panel" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
-            <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
+       <div id="section-stats" style="display: none;">
+        <header><h1 style="text-align: center; margin-bottom: 20px;">Estadísticas</h1></header>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+            <button onclick="updateChartFilter('7days')" class="btn-filter active" id="btn-7days">Día</button>
+            <button onclick="updateChartFilter('month')" class="btn-filter" id="btn-month">Mes</button>
+            <button onclick="updateChartFilter('year')" class="btn-filter" id="btn-year">Año</button>
         </div>
 
+        <div class="form-section" style="height: 300px; padding: 15px;">
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-color color-income"></span>
+                    <span>Ingresos</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color color-expense"></span>
+                    <span>Gastos</span>
+                </div>
+            </div>
+            <canvas id="spendingChart"></canvas>
+        </div>
+
+        <div id="stats-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;">
+                <h3 style="font-size: 1rem; color: white;">Detalle de Gastos</h3>
+                <button class="order-toggle-btn" onclick="toggleStatsOrder()" style="width: auto; margin: 0; padding: 5px 12px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-white); border-radius: 8px; cursor: pointer; font-size: 0.8rem;">⇅ Ordenar</button>
+            </div>
+            <div id="stats-individual-list"></div>
+        </div>
+
+        <div id="stats-panel" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
+        <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
+    </div>
+
+    <div id="confirm-modal" class="modal-wrapper">
+        <div class="modal-content" style="border: 2px solid var(--primary); background: var(--card-bg);">
+            <h3 style="color: var(--primary); margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;">¿Restablecer todo?</h3>
+            <p style="color: var(--text-white); font-size: 0.9rem; margin-bottom: 25px;">
+                Esta acción borrará todos tus gastos y el presupuesto actual. No se puede deshacer.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button id="modal-confirm-btn" class="btn-primary" style="flex: 1;">SÍ, RESETEAR</button>
+                <button id="modal-confirm-cancel-btn" class="btn-reset" style="flex: 1; background: #222; border-color: #444; color: #fff;">CANCELAR</button>
+            </div>
+        </div>
     </div>
 
     <div id="custom-modal" class="modal-wrapper">
@@ -191,8 +201,6 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
 
 
 
