@@ -386,13 +386,43 @@ function showModal(title, msg, icon, isConfirm = false) {
 }
 
 async function resetApp() {
-    if (await showModal("Resetear", "¿Estás seguro de borrar todo?", "🗑️", true)) {
-        transactions = []; budgetVES = 0; spendingLimitVES = 0;
-        document.getElementById('total-budget').value = '';
-        document.getElementById('spending-limit').value = '';
-        renderAll(); await syncToCloud();
+    const modalConfirm = document.getElementById('confirm-modal');
+    if (modalConfirm) {
+        modalConfirm.style.display = 'flex';
     }
 }
+
+// Función para cerrar el modal de confirmación
+function closeConfirmModal() {
+    const modalConfirm = document.getElementById('confirm-modal');
+    if (modalConfirm) {
+        modalConfirm.style.display = 'none';
+    }
+}
+
+// Asignamos las funciones a los botones del nuevo modal
+document.addEventListener('DOMContentLoaded', () => {
+    const btnConfirmReset = document.getElementById('modal-confirm-btn');
+    const btnCancelReset = document.getElementById('modal-confirm-cancel-btn');
+
+    if (btnConfirmReset) {
+        btnConfirmReset.onclick = function() {
+            // AQUÍ LA LÓGICA DE BORRADO REAL:
+            transactions = [];
+            budgetVES = 0;
+            localStorage.removeItem('transactions');
+            localStorage.removeItem('budgetVES');
+            
+            // Cerramos y recargamos para limpiar la pantalla
+            closeConfirmModal();
+            location.reload(); 
+        };
+    }
+
+    if (btnCancelReset) {
+        btnCancelReset.onclick = closeConfirmModal;
+    }
+});
 
 function renderCategoryAnalysis() {
     const analysisContainer = document.getElementById('stats-panel');
@@ -481,6 +511,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
