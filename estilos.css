@@ -192,15 +192,24 @@ sidebar-nav a:hover {
 
 /* --- BOTONES Y FORMULARIOS (CON VISIBILIDAD) --- */
 input, select {
-    background: #111111 !important;
+    width: 100%;
+    padding: 14px 18px;
+    margin: 10px 0;
+    border-radius: 12px !important;
     border: 1px solid var(--border) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
     color: white !important;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    appearance: none; /* Quita el estilo básico de sistema */
 }
 
 input:focus, select:focus {
     border-color: var(--primary) !important;
+    background: rgba(212, 175, 55, 0.05) !important;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
     outline: none;
-    box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
 }
 
 button {
@@ -336,14 +345,11 @@ button {
 }
 
 /* --- SCROLLS --- */
-#stats-individual-list {
-    max-height: 500px;
-    overflow-y: auto;
-    padding-right: 5px;
+/* Estilo del scroll para Chrome/Safari */
+#stats-individual-list::-webkit-scrollbar {
+    width: 6px;
 }
-
-#stats-individual-list::-webkit-scrollbar-thumb,
-#transaction-list::-webkit-scrollbar-thumb {
+#stats-individual-list::-webkit-scrollbar-thumb {
     background: var(--primary);
     border-radius: 10px;
 }
@@ -451,6 +457,10 @@ button {
 .expense-item-card:active {
     transform: scale(0.98); /* Efecto de pulsación en móvil */
 }
+    .buttons-container-unused, .modal-footer-fake {
+    display: none !important;
+}
+
 
 
 
