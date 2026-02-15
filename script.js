@@ -51,11 +51,10 @@ function showSection(sec) {
     if(sec === 'stats') {
         renderChart();
         renderIndividualStats(); 
+        // --- AGREGA ESTAS DOS LÍNEAS AQUÍ ---
+        renderCategoryAnalysis();
     }
-    if(sec === 'registros') renderFullHistory();
-    
-    const sidebar = document.getElementById('sidebar');
-    if(sidebar.classList.contains('active')) toggleMenu();
+    // ...
 }
 
 // --- 3. GESTIÓN DE GASTOS ---
@@ -63,25 +62,26 @@ async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const curr = document.getElementById('currency').value;
-    const category = document.getElementById('category-select').value; // Capturar categoría
+    // --- AGREGA ESTA LÍNEA AQUÍ ---
+    const category = document.getElementById('category-select').value; 
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
-    let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
-    
-    // ... (mantener lógica de límites que ya tienes)
+    // ... (deja el resto igual hasta llegar a transactions.push)
 
-    const ahora = new Date();
     transactions.push({ 
         id: Date.now(), 
         date: ahora.toISOString(), 
         time: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         desc, 
-        category, // Guardar la categoría
+        category, // --- ASEGÚRATE DE QUE ESTO ESTÉ AQUÍ ---
         originalAmount: amount, 
         originalCurrency: curr, 
-        valueVES: valVES
+        valueVES: valVES, 
+        balanceAtMoment: saldoRestante 
     });
+    // ... (el resto queda igual)
+}
 
     renderAll(); 
     await syncToCloud();
@@ -326,6 +326,57 @@ async function resetApp() {
         showModal("Hecho", "Datos reseteados correctamente", "🧹");
     }
 }
+/ --- PEGA ESTO AL FINAL DE TU SCRIPT.JS ---
+
+function renderCategoryAnalysis() {
+    const analysisContainer = document.getElementById('stats-panel');
+    if (!analysisContainer) return;
+    if (transactions.length === 0) {
+        analysisContainer.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Registra gastos para ver el análisis.</p>`;
+        return;
+    }
+
+    const totals = {};
+    transactions.forEach(t => {
+        const cat = t.category || "Otros";
+        totals[cat] = (totals[cat] || 0) + t.valueVES;
+    });
+
+    let maxCat = "";
+    let maxMonto = 0;
+    for (const [cat, monto] of Object.entries(totals)) {
+        if (monto > maxMonto) {
+            maxMonto = monto;
+            maxCat = cat;
+        }
+    }
+
+    const gastoTotal = transactions.reduce((s, t) => s + t.valueVES, 0);
+    const porcentaje = ((maxMonto / gastoTotal) * 100).toFixed(1);
+
+    let consejo = "Esta categoría es tu mayor gasto actual.";
+    if (maxCat.includes("Comida")) consejo = "El gasto en alimentación es alto. ¡Considera comprar al mayor!";
+    else if (maxCat.includes("Ocio")) consejo = "Parece que te has divertido mucho, pero cuida el presupuesto de ahorro.";
+    else if (maxCat.includes("Transporte")) consejo = "Los gastos de movilidad dominan. ¿Podrías optimizar rutas?";
+
+    analysisContainer.innerHTML = `
+        <div class="analysis-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(30, 41, 59, 1)); padding: 20px; border-radius: 20px; border: 1px solid var(--primary); margin-top: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="font-size: 1.5rem;">🧐</span>
+                <h3 style="color: white; font-size: 1.1rem; margin: 0;">Análisis de Gastos</h3>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+                Tu mayor gasto es en <b style="color: var(--primary); font-size: 1rem;">${maxCat}</b> con un total de <b>${fmt(maxMonto)} BS</b>.
+            </p>
+            <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin-bottom: 15px;">
+                <div style="background: var(--primary); width: ${porcentaje}%; height: 100%; border-radius: 10px; box-shadow: 0 0 10px var(--primary);"></div>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-white); background: rgba(0,0,0,0.2); padding: 10px; border-left: 3px solid var(--success); border-radius: 4px;">
+                <b>💡 Consejo:</b> ${consejo}
+            </p>
+        </div>
+    `;
+}
 
 window.onload = () => {
     if (currentUser) {
@@ -339,6 +390,7 @@ window.onload = () => {
         fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
     }
 };
+
 
 
 
