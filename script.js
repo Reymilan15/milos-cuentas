@@ -51,10 +51,12 @@ function showSection(sec) {
     if(sec === 'stats') {
         renderChart();
         renderIndividualStats(); 
-        // --- AGREGA ESTAS DOS LÍNEAS AQUÍ ---
         renderCategoryAnalysis();
     }
-    // ...
+    if(sec === 'registros') renderFullHistory();
+
+    const sidebar = document.getElementById('sidebar');
+    if(sidebar && sidebar.classList.contains('active')) toggleMenu();
 }
 
 // --- 3. GESTIÓN DE GASTOS ---
@@ -62,26 +64,35 @@ async function addTransaction() {
     const desc = document.getElementById('desc').value;
     const amount = parseFloat(document.getElementById('amount').value);
     const curr = document.getElementById('currency').value;
-    // --- AGREGA ESTA LÍNEA AQUÍ ---
-    const category = document.getElementById('category-select').value; 
+    const category = document.getElementById('category-select') ? document.getElementById('category-select').value : "Otros";
 
     if (!desc || isNaN(amount)) return showModal("Error", "Datos incompletos", "🛒");
 
-    // ... (deja el resto igual hasta llegar a transactions.push)
+    let valVES = (curr === "USD") ? amount * rates.USD : (curr === "EUR") ? amount * rates.EUR : amount;
+    
+    // Lógica de saldo y límites (RECUPERADA)
+    const totalAntes = transactions.reduce((s, x) => s + x.valueVES, 0);
+    const totalDespues = totalAntes + valVES;
+    const saldoRestante = budgetVES - totalDespues;
 
+    if (spendingLimitVES > 0 && totalDespues > spendingLimitVES) {
+        const exceso = totalDespues - spendingLimitVES;
+        const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar de todas formas?`;
+        if (!(await showModal("Límite Superado", msg, "⚠️", true))) return;
+    }
+
+    const ahora = new Date();
     transactions.push({ 
         id: Date.now(), 
         date: ahora.toISOString(), 
         time: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         desc, 
-        category, // --- ASEGÚRATE DE QUE ESTO ESTÉ AQUÍ ---
+        category,
         originalAmount: amount, 
         originalCurrency: curr, 
         valueVES: valVES, 
         balanceAtMoment: saldoRestante 
     });
-    // ... (el resto queda igual)
-}
 
     renderAll(); 
     await syncToCloud();
@@ -108,8 +119,7 @@ function renderIndividualStats() {
         card.className = 'expense-item-card';
         card.onclick = () => focusTransactionInChart(t.date);
         
-        // Asignar un emoji según categoría por si no viene en el registro viejo
-        const catEmoji = t.category ? t.category : "📦";
+        const catEmoji = t.category || "📦";
 
         card.innerHTML = `
             <div class="expense-card-top">
@@ -170,26 +180,7 @@ function renderChart() {
         options: { responsive: true, maintainAspectRatio: false }
     });
 }
-function renderCategorySummary() {
-    const panel = document.getElementById('stats-panel');
-    if (!panel) return;
 
-    const totals = {};
-    transactions.forEach(t => {
-        const cat = t.category || "Otros";
-        totals[cat] = (totals[cat] || 0) + t.valueVES;
-    });
-
-    panel.innerHTML = '<h3 style="color:white; font-size:1rem; margin-bottom:10px;">Gasto por Categoría</h3>';
-    for (const [cat, monto] of Object.entries(totals)) {
-        panel.innerHTML += `
-            <div style="display:flex; justify-content:space-between; background:var(--card-bg); padding:10px 15px; border-radius:12px; margin-bottom:5px; border:1px solid var(--border)">
-                <span>${cat}</span>
-                <span style="font-weight:bold">${fmt(monto)} BS</span>
-            </div>
-        `;
-    }
-}
 // --- 6. AUTENTICACIÓN Y NUBE ---
 async function login() {
     const identifier = document.getElementById('username').value;
@@ -228,12 +219,15 @@ function entrarALaApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
+    
     transactions = currentUser.transactions || [];
     budgetVES = currentUser.budget || 0;
     spendingLimitVES = currentUser.spendingLimit || 0;
+    
     document.getElementById('side-username').innerText = currentUser.name || "Usuario";
     document.getElementById('total-budget').value = budgetVES || "";
     document.getElementById('spending-limit').value = spendingLimitVES || "";
+    
     fetchBCVRate();
     renderAll();
 }
@@ -244,7 +238,12 @@ async function syncToCloud() {
         await fetch(`${API_URL}/api/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser.username, budget: budgetVES, spendingLimit: spendingLimitVES, transactions: transactions })
+            body: JSON.stringify({ 
+                username: currentUser.username, 
+                budget: budgetVES, 
+                spendingLimit: spendingLimitVES, 
+                transactions: transactions 
+            })
         });
     } catch (e) {}
 }
@@ -310,30 +309,19 @@ function showModal(title, msg, icon, isConfirm = false) {
         document.getElementById('modal-cancel-btn').onclick = () => { m.style.display = "none"; res(false); };
     });
 }
-// --- FUNCIÓN ADICIONAL PARA EL BOTÓN RESET ---
+
 async function resetApp() {
-    if (await showModal("Resetear", "¿Estás seguro de borrar todos los gastos y el presupuesto?", "🗑️", true)) {
-        transactions = [];
-        budgetVES = 0;
-        spendingLimitVES = 0;
-        
-        // Limpiar inputs en la UI
+    if (await showModal("Resetear", "¿Estás seguro de borrar todo?", "🗑️", true)) {
+        transactions = []; budgetVES = 0; spendingLimitVES = 0;
         document.getElementById('total-budget').value = '';
         document.getElementById('spending-limit').value = '';
-        
-        renderAll();
-        await syncToCloud();
-        showModal("Hecho", "Datos reseteados correctamente", "🧹");
+        renderAll(); await syncToCloud();
     }
 }
 
 function renderCategoryAnalysis() {
     const analysisContainer = document.getElementById('stats-panel');
-    if (!analysisContainer) return;
-    if (transactions.length === 0) {
-        analysisContainer.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Registra gastos para ver el análisis.</p>`;
-        return;
-    }
+    if (!analysisContainer || transactions.length === 0) return;
 
     const totals = {};
     transactions.forEach(t => {
@@ -341,52 +329,33 @@ function renderCategoryAnalysis() {
         totals[cat] = (totals[cat] || 0) + t.valueVES;
     });
 
-    let maxCat = "";
-    let maxMonto = 0;
+    let maxCat = "", maxMonto = 0;
     for (const [cat, monto] of Object.entries(totals)) {
-        if (monto > maxMonto) {
-            maxMonto = monto;
-            maxCat = cat;
-        }
+        if (monto > maxMonto) { maxMonto = monto; maxCat = cat; }
     }
 
     const gastoTotal = transactions.reduce((s, t) => s + t.valueVES, 0);
     const porcentaje = ((maxMonto / gastoTotal) * 100).toFixed(1);
 
-    let consejo = "Esta categoría es tu mayor gasto actual.";
-    if (maxCat.includes("Comida")) consejo = "El gasto en alimentación es alto. ¡Considera comprar al mayor!";
-    else if (maxCat.includes("Ocio")) consejo = "Parece que te has divertido mucho, pero cuida el presupuesto de ahorro.";
-    else if (maxCat.includes("Transporte")) consejo = "Los gastos de movilidad dominan. ¿Podrías optimizar rutas?";
-
     analysisContainer.innerHTML = `
         <div class="analysis-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(30, 41, 59, 1)); padding: 20px; border-radius: 20px; border: 1px solid var(--primary); margin-top: 15px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <span style="font-size: 1.5rem;">🧐</span>
-                <h3 style="color: white; font-size: 1.1rem; margin: 0;">Análisis de Gastos</h3>
+            <h3 style="color: white; font-size: 1rem; margin-bottom: 10px;">🧐 Análisis de Gastos</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Mayor gasto en: <b style="color:var(--primary)">${maxCat}</b> (${fmt(maxMonto)} BS)</p>
+            <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin: 10px 0;">
+                <div style="background: var(--primary); width: ${porcentaje}%; height: 100%; border-radius: 10px;"></div>
             </div>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
-                Tu mayor gasto es en <b style="color: var(--primary); font-size: 1rem;">${maxCat}</b> con un total de <b>${fmt(maxMonto)} BS</b>.
-            </p>
-            <div style="background: rgba(255,255,255,0.05); height: 8px; border-radius: 10px; margin-bottom: 15px;">
-                <div style="background: var(--primary); width: ${porcentaje}%; height: 100%; border-radius: 10px; box-shadow: 0 0 10px var(--primary);"></div>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-white); background: rgba(0,0,0,0.2); padding: 10px; border-left: 3px solid var(--success); border-radius: 4px;">
-                <b>💡 Consejo:</b> ${consejo}
-            </p>
         </div>
     `;
 }
 
 window.onload = () => {
     if (currentUser) {
-        // Si hay sesión, forzamos que el login desaparezca
-        document.getElementById('login-screen').style.setProperty("display", "none", "important");
         entrarALaApp();
     } else {
-        // Si no hay sesión, aseguramos que la app esté oculta
+        document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('app-container').style.display = 'none';
         document.getElementById('app-header-ui').style.display = 'none';
-        fetchBCVRate(); // Carga la tasa para mostrarla en el login si quieres
+        fetchBCVRate();
     }
 };
 
