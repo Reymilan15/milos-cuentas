@@ -387,7 +387,7 @@ function showModal(title, msg, icon, isConfirm = false) {
 function resetApp() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        // Usamos setProperty para que el 'flex' le gane al 'none !important' del CSS
+        // Al poner 'flex', el modal obedece al justify-content y align-items
         modalConfirm.style.setProperty('display', 'flex', 'important');
     }
 }
@@ -511,6 +511,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
