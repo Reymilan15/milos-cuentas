@@ -329,24 +329,31 @@ button {
 
 /* --- MODAL --- */
 .modal-wrapper {
-    /* Esto lo saca del flujo y lo pone frente a la pantalla */
+    /* FUERZA BRUTA: Lo sacamos de cualquier contenedor */
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
+    right: 0 !important;
+    bottom: 0 !important;
     
-    /* Fondo oscuro y desenfoque */
-    background: rgba(0, 0, 0, 0.9) !important;
-    backdrop-filter: blur(8px) !important;
+    /* Ocupar toda la pantalla del dispositivo */
+    width: 100vw !important;
+    height: 100vh !important;
     
-    /* Centrado absoluto */
-    display: none; /* Se activa con el JS */
-    justify-content: center;
-    align-items: center;
+    /* CAPA SUPERIOR: Por encima de absolutamente todo */
+    z-index: 2147483647 !important; /* El valor máximo posible en navegadores */
     
-    /* Prioridad por encima de todo */
-    z-index: 999999 !important;
+    /* ESTADO INICIAL */
+    display: none; 
+    
+    /* CENTRADO */
+    justify-content: center !important;
+    align-items: center !important;
+    
+    /* DISEÑO */
+    background: rgba(0, 0, 0, 0.92) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .modal-content {
@@ -475,6 +482,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
