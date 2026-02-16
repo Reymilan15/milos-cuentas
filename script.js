@@ -384,20 +384,29 @@ function showModal(title, msg, icon, isConfirm = false) {
     });
 }
 
- function resetApp() {
+function resetApp() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        // Usamos flex para que los estilos de centrado del CSS funcionen
-        modalConfirm.style.display = 'flex'; 
+        // Usamos setProperty para que el 'flex' le gane al 'none !important' del CSS
+        modalConfirm.style.setProperty('display', 'flex', 'important');
     }
 }
 
 function closeConfirmModal() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        modalConfirm.style.display = 'none';
+        // Lo volvemos a ocultar
+        modalConfirm.style.setProperty('display', 'none', 'important');
     }
 }
+
+// Configuración de botones (Pon esto al final de tu script.js)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCancel = document.getElementById('modal-confirm-cancel-btn');
+    if (btnCancel) {
+        btnCancel.onclick = closeConfirmModal;
+    }
+});
 // Asignamos las funciones a los botones del nuevo modal
 document.addEventListener('DOMContentLoaded', () => {
     const btnConfirmReset = document.getElementById('modal-confirm-btn');
@@ -509,6 +518,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
