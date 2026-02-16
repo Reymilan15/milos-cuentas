@@ -1,4 +1,3 @@
-
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
 let transactions = [];
@@ -386,25 +385,19 @@ function showModal(title, msg, icon, isConfirm = false) {
 }
 
 async function resetApp() {
-    // Primero nos aseguramos de que cualquier otro modal esté cerrado
-    const customModal = document.getElementById('custom-modal');
-    if (customModal) customModal.style.setProperty('display', 'none', 'important');
-
-    // Ahora mostramos el de confirmación de reset
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        modalConfirm.style.setProperty('display', 'flex', 'important');
+        // Usamos flex para que los estilos de centrado del CSS funcionen
+        modalConfirm.style.display = 'flex'; 
     }
 }
 
-// Función para cerrar
 function closeConfirmModal() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
-        modalConfirm.style.setProperty('display', 'none', 'important');
+        modalConfirm.style.display = 'none';
     }
 }
-
 // Asignamos las funciones a los botones del nuevo modal
 document.addEventListener('DOMContentLoaded', () => {
     const btnConfirmReset = document.getElementById('modal-confirm-btn');
@@ -516,6 +509,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
