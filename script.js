@@ -384,7 +384,7 @@ function showModal(title, msg, icon, isConfirm = false) {
     });
 }
 
-async function resetApp() {
+ function resetApp() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
         // Usamos flex para que los estilos de centrado del CSS funcionen
@@ -509,6 +509,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
