@@ -329,24 +329,24 @@ button {
 
 /* --- MODAL --- */
 .modal-wrapper {
-    /* Esto lo saca del fondo y lo pega a la pantalla del móvil/PC */
-    position: fixed !important; 
+    /* Esto lo saca del flujo y lo pone frente a la pantalla */
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
+    width: 100% !important;
+    height: 100% !important;
     
-    /* Esto asegura que esté por encima de cualquier otro botón o tarjeta */
-    z-index: 999999 !important; 
+    /* Fondo oscuro y desenfoque */
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(8px) !important;
     
-    /* El fondo oscuro y desenfoque */
-    background-color: rgba(0, 0, 0, 0.85) !important;
-    backdrop-filter: blur(8px);
-
-    /* Esto lo centra perfectamente en el medio */
-    display: none; /* Se cambia a 'flex' por JS */
+    /* Centrado absoluto */
+    display: none; /* Se activa con el JS */
     justify-content: center;
     align-items: center;
+    
+    /* Prioridad por encima de todo */
+    z-index: 999999 !important;
 }
 
 .modal-content {
@@ -475,6 +475,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
