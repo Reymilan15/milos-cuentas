@@ -400,13 +400,6 @@ function closeConfirmModal() {
     }
 }
 
-// Configuración de botones (Pon esto al final de tu script.js)
-document.addEventListener('DOMContentLoaded', () => {
-    const btnCancel = document.getElementById('modal-confirm-cancel-btn');
-    if (btnCancel) {
-        btnCancel.onclick = closeConfirmModal;
-    }
-});
 // Asignamos las funciones a los botones del nuevo modal
 document.addEventListener('DOMContentLoaded', () => {
     const btnConfirmReset = document.getElementById('modal-confirm-btn');
@@ -518,6 +511,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
