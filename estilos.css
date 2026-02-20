@@ -508,6 +508,28 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+#login-form-container div, #register-form-container div {
+    position: relative;
+    width: 100%;
+}
+
+/* Estilo para el ojito */
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 20px;
+    z-index: 10;
+    color: var(--primary); /* O el color que resalte en tu app */
+    user-select: none;
+}
+
+/* Ajuste para que el texto de la contraseña no se tape con el ojo */
+input[type="password"], input[type="text"] {
+    padding-right: 40px !important;
+}
 
 
 
