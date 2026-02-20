@@ -356,11 +356,28 @@ function renderFullHistory() {
     });
 }
 
-async function setBudget() {
-    budgetVES = parseFloat(document.getElementById('total-budget').value) || 0;
-    spendingLimitVES = parseFloat(document.getElementById('spending-limit').value) || 0;
-    renderAll(); await syncToCloud();
-    showModal("Éxito", "Presupuesto guardado", "✅");
+function setBudget() {
+    const total = parseFloat(document.getElementById('total-budget').value);
+    const limit = parseFloat(document.getElementById('spending-limit').value);
+
+    // Si el límite es mayor al presupuesto, lanzamos la alerta centrada
+    if (limit > total) {
+        const modal = document.getElementById('confirm-modal');
+        modal.style.display = "flex"; // Esto activa el centrado
+        
+        document.getElementById('modal-confirm-btn').onclick = function() {
+            // Aquí pones la lógica para guardar si el usuario acepta
+            modal.style.display = "none";
+            confirmSetBudget(total, limit); 
+        };
+        return;
+    }
+    // Si todo está bien, guarda normal
+    saveBudget(total, limit);
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirm-modal').style.display = "none";
 }
 
 async function deleteTransaction(id) {
@@ -527,6 +544,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
