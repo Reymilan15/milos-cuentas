@@ -154,11 +154,13 @@
 
   <div id="confirm-modal" class="modal-wrapper">
     <div class="modal-content">
-        <h3 id="modal-title">Límite Superado</h3>
-        <p id="modal-text">Atención: Superas tu límite. ¿Registrar de todas formas?</p>
+        <div style="padding: 20px; text-align: center;">
+            <h3 id="modal-title" style="margin: 0; color: black;"></h3>
+            <p id="modal-text" style="color: #666; font-size: 14px;"></p>
+        </div>
         <div class="modal-buttons">
             <button id="modal-confirm-btn">Aceptar</button>
-            <button onclick="closeConfirmModal()">Cancelar</button>
+            <button onclick="closeConfirmModal()" style="color: #ff3b30;">Cancelar</button>
         </div>
     </div>
 </div>
@@ -178,6 +180,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
