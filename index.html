@@ -168,7 +168,7 @@
             </div>
             <div id="stats-individual-list"></div>
         </div>
-
+       </div>
         <div id="stats-panel" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
         <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
     </div>
@@ -176,21 +176,20 @@
 <body>
     <div id="confirm-modal" class="modal-wrapper" style="display: none;">
         <div class="modal-content" style="border: 2px solid var(--primary); background: var(--card-bg); margin: auto;">
-             <div id="modal-icon" style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+             <div id="modal-icon" style="font-size: 3rem; margin-bottom: 10px;">⚠️
              <h3 style="color: var(--primary);">¿Restablecer todo?</h3>
              <p>Esta acción borrará todo. No se puede deshacer.</p>
              <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="modal-confirm-btn" class="btn-primary" style="flex: 1;">SÍ</button>
-                <button onclick="closeConfirmModal()" class="btn-reset" style="flex: 1;">NO</button>
+                <button onclick="closeConfirmModal()" class="btn-reset" id="modal-confirm-cancel-btn" style="flex: 1;">NO</button>
              </div>
         </div>
     </div>
-
-    <div class="app-container">
-        </div>
-
+</div>
+   
     <script src="script.js"></script>
 </body>
+</html>
 
 
 
