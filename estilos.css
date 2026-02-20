@@ -329,43 +329,38 @@ button {
 
 /* --- MODAL --- */
 .modal-wrapper {
-    /* FUERZA BRUTA: Lo sacamos de cualquier contenedor */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    
-    /* Ocupar toda la pantalla del dispositivo */
-    width: 100vw !important;
-    height: 100vh !important;
-    
-    /* CAPA SUPERIOR: Por encima de absolutamente todo */
-    z-index: 2147483647 !important; /* El valor máximo posible en navegadores */
-    
-    /* ESTADO INICIAL */
-    display: none; 
-    
-    /* CENTRADO */
-    justify-content: center !important;
-    align-items: center !important;
-    
-    /* DISEÑO */
-    background: rgba(0, 0, 0, 0.92) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px);
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px); /* Efecto de desenfoque premium */
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
-    background: var(--card-bg);
-    padding: 30px;
-    border-radius: 28px;
-    width: 90%;
-    max-width: 400px;
-    border: 2px solid var(--primary); /* Tu dorado VIP */
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-    text-align: center;
+    transform: scale(1);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Estilo para el botón de cancelar dentro del modal */
+#modal-cancel-btn:hover {
+    color: white;
+    text-decoration: underline;
+}
+    
 /* --- SCROLLS --- */
 /* Estilo del scroll para Chrome/Safari */
 #stats-individual-list::-webkit-scrollbar {
@@ -482,6 +477,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
