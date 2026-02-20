@@ -360,16 +360,6 @@ button {
 }
 }
 
-.modal-content {
-    background: white !important;
-    color: black !important;
-    border-radius: 20px !important;
-    padding: 25px !important;
-    width: 280px !important;
-    text-align: center !important;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
-    border: none !important;
-}
 
 #modal-title { color: black !important; font-weight: bold !important; }
 #modal-text { color: #444 !important; }
@@ -530,6 +520,7 @@ button {
 input[type="password"], input[type="text"] {
     padding-right: 40px !important;
 }
+
 
 
 
