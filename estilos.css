@@ -327,77 +327,58 @@ button {
     color: var(--text-muted);
 }
 
-/* Contenedor principal que oscurece el fondo */
+/* Contenedor que cubre TODA la pantalla */
 .modal-wrapper {
-    display: none; /* Se controla por JS */
+    display: none; /* Se activa con 'flex' desde JS */
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    background: rgba(0, 0, 0, 0.85) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 2147483647 !important; /* El máximo posible para estar siempre arriba */
+    background: rgba(0, 0, 0, 0.4) !important; /* Fondo oscurecido suave */
+    backdrop-filter: blur(5px) !important; /* Desenfoque tipo iOS */
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 99999 !important; /* Por encima de todo */
     
-    /* ESTO ELIMINA EL ERROR DE LA IMAGEN: Fuerza el centrado */
-    margin: 0 !important;
-    padding: 0 !important;
+    /* ESTO ES LO QUE LO CENTRA */
     justify-content: center !important;
     align-items: center !important;
+    margin: 0 !important;
 }
 
-/* La ventanilla con diseño profesional (Glassmorphism) */
+/* La ventanilla blanca tipo iOS */
 .modal-content {
-    background: #111827 !important; /* Fondo muy oscuro */
-    width: 85% !important;
-    max-width: 340px !important;
-    padding: 30px !important;
-    border-radius: 24px !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    text-align: center !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
-    position: relative !important;
-}
-
-/* Títulos y textos del modal */
-#modal-title {
-    color: #ffffff !important;
-    font-size: 1.25rem !important;
-    font-weight: 700 !important;
-    margin-bottom: 10px !important;
-}
-
-#modal-text {
-    color: #9ca3af !important;
-    font-size: 0.95rem !important;
-    line-height: 1.5 !important;
-    margin-bottom: 25px !important;
-}
-
-/* Botón Aceptar (Estilo Moderno) */
-#modal-ok-btn {
-    background: #3b82f6 !important;
-    color: white !important;
-    width: 100% !important;
-    padding: 14px !important;
-    border: none !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    width: 80% !important;
+    max-width: 280px !important;
     border-radius: 14px !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    transition: background 0.2s !important;
+    padding: 20px 0 0 0 !important; /* Padding ajustado para los botones */
+    text-align: center !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+    animation: zoomIn 0.2s ease-out;
+    color: #000 !important;
 }
 
-/* Botón Cancelar (Sutil) */
-#modal-cancel-btn {
+/* Título y texto */
+#modal-title { font-weight: 600; font-size: 17px; margin-bottom: 5px; color: #000; }
+#modal-text { font-size: 13px; padding: 0 15px 15px 15px; color: #000; border-bottom: 0.5px solid #ccc; }
+
+/* Botones estilo iPhone */
+.modal-buttons { display: flex; flex-direction: column; }
+.modal-buttons button {
     background: transparent !important;
-    color: #6b7280 !important;
-    width: 100% !important;
-    padding: 10px !important;
     border: none !important;
-    margin-top: 5px !important;
+    padding: 12px !important;
+    font-size: 17px !important;
+    color: #007aff !important; /* Azul iPhone */
     cursor: pointer !important;
-    text-decoration: underline;
+    width: 100% !important;
+}
+#modal-confirm-btn { font-weight: 600 !important; border-bottom: 0.5px solid #ccc !important; }
+
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(1.1); }
+    to { opacity: 1; transform: scale(1); }
 }
     
 /* --- SCROLLS --- */
@@ -516,6 +497,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
