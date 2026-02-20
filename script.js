@@ -70,13 +70,11 @@ async function addTransaction() {
     const curr = currencyInput.value;
     const category = categoryInput ? categoryInput.value : "Otros";
 
-    // Validación estricta de datos
     if (!desc || isNaN(amount) || amount <= 0) {
         await showModal("Error", "Ingresa una descripción y un monto válido", "🛒");
         return;
     }
 
-    // Si el presupuesto es 0, avisar al usuario
     if (budgetVES <= 0) {
         await showModal("Presupuesto Vacío", "Primero fija un presupuesto en la parte superior", "💰");
         return;
@@ -88,22 +86,23 @@ async function addTransaction() {
     const saldoDisponibleReal = budgetVES - totalGastadoAntes;
     const totalDespuesDeEsteGasto = totalGastadoAntes + valVES;
 
-    // --- REGLA 1: BLOQUEO TOTAL ---
+    // REGLA 1: BLOQUEO TOTAL (SALDO INSUFICIENTE)
     if (valVES > saldoDisponibleReal) {
-        await showModal("Gasto Rechazado", `No tienes saldo suficiente. El gasto es de ${fmt(valVES)} BS y solo te quedan ${fmt(saldoDisponibleReal)} BS.`, "🚫");
+        await showModal("Gasto Rechazado", `No tienes saldo suficiente. Solo te quedan ${fmt(saldoDisponibleReal)} BS.`, "🚫");
         return; 
     }
 
-    // --- REGLA 2: ADVERTENCIA DE LÍMITE ---
+    // REGLA 2: ADVERTENCIA DE LÍMITE (ESTILO IPHONE)
     if (spendingLimitVES > 0 && totalDespuesDeEsteGasto > spendingLimitVES) {
         const exceso = totalDespuesDeEsteGasto - spendingLimitVES;
         const msg = `Atención: Superas tu límite por ${fmt(exceso)} BS. ¿Registrar de todas formas?`;
+        
+        // ESTA ES LA CLAVE: El programa se detiene aquí hasta que pulses un botón
         const confirma = await showModal("Límite Superado", msg, "⚠️", true);
-        if (!confirma) return;
+        if (!confirma) return; // Si cancelas, no se registra nada
     }
 
     const ahora = new Date();
-    // Corregimos el cálculo del saldo al momento para el registro
     const saldoRestanteFinal = budgetVES - totalDespuesDeEsteGasto;
 
     transactions.push({ 
@@ -124,7 +123,6 @@ async function addTransaction() {
     descInput.value = '';
     amountInput.value = '';
 }
-
 // --- 4. ESTADÍSTICAS E INTERACCIÓN ---
 function toggleStatsOrder() {
     statsOrderAsc = !statsOrderAsc;
@@ -603,6 +601,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
