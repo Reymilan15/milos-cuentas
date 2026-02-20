@@ -121,7 +121,7 @@ async function addTransaction() {
     amountInput.value = '';
 }
 
-// --- 4. GESTIÓN DE PRESUPUESTO (CORREGIDA) ---
+// --- 4. GESTIÓN DE PRESUPUESTO ---
 async function setBudget() {
     const total = parseFloat(document.getElementById('total-budget').value) || 0;
     const limit = parseFloat(document.getElementById('spending-limit').value) || 0;
@@ -164,6 +164,8 @@ function showModal(title, msg, icon, isConfirm = false) {
         const iconEl = document.getElementById('modal-icon');
         const okBtn = document.getElementById('modal-ok-btn');
         const cancelBtn = document.getElementById('modal-cancel-btn');
+
+        if(!m) { res(isConfirm ? false : true); return; }
 
         titleEl.innerText = title;
         textEl.innerText = msg;
@@ -218,7 +220,8 @@ async function register() {
     const username = document.getElementById('reg-username').value.trim();
     const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
+    // Ajustado al nuevo ID del HTML
+    const password = document.getElementById('reg-password-input').value;
 
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name)) return await showModal("Error", "El nombre solo letras", "👤");
     if (username.length < 4) return await showModal("Error", "Usuario muy corto", "🆔");
@@ -399,7 +402,6 @@ function togglePasswordVisibility(inputId, iconId) {
     const passInput = document.getElementById(inputId);
     const iconSpan = document.getElementById(iconId);
 
-
     if (!passInput || !iconSpan) return;
 
     if (passInput.type === "password") {
@@ -413,28 +415,48 @@ function togglePasswordVisibility(inputId, iconId) {
 
 function checkPassStrength() {
     const passInput = document.getElementById('reg-password-input');
-    if (!passInput) return; 
-    const pass = passInput.value;
     const bar = document.getElementById('pass-strength-bar');
     const text = document.getElementById('pass-text');
+    
+    if (!passInput || !bar || !text) return; 
+    
+    const pass = passInput.value;
+    let strength = 0;
+    
+    if (pass.length >= 8) strength += 25;
+    if (/[A-Z]/.test(pass)) strength += 25;
+    if (/[0-9]/.test(pass)) strength += 25;
+    if (/[^A-Za-z0-9]/.test(pass)) strength += 25;
 
+    bar.style.width = strength + "%";
+    
+    if (strength <= 25) { bar.style.backgroundColor = "#ff4d4d"; text.innerText = "Débil"; }
+    else if (strength <= 75) { bar.style.backgroundColor = "#ffd11a"; text.innerText = "Media"; }
+    else { bar.style.backgroundColor = "#00cc44"; text.innerText = "Fuerte"; }
 }
 
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
 function changeView(iso) { currentView = iso; renderAll(); }
+
 function toggleAuth(isReg) {
     document.getElementById('login-form-container').style.display = isReg ? 'none' : 'block';
     document.getElementById('register-form-container').style.display = isReg ? 'block' : 'none';
+    document.getElementById('auth-title').innerText = isReg ? 'Crear Cuenta' : 'Iniciar Sesión';
 }
-function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
+
+function updateChartFilter(f) { 
+    currentChartFilter = f; 
+    document.getElementById('btn-7days').classList.toggle('active', f === '7days');
+    document.getElementById('btn-month').classList.toggle('active', f === 'month');
+    renderChart(); 
+}
+
 function toggleStatsOrder() { statsOrderAsc = !statsOrderAsc; renderIndividualStats(); }
 
 window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
-
-
 
 
 
