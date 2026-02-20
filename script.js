@@ -397,9 +397,9 @@ function toggleCategoryDetails() {
 
 function togglePasswordVisibility(inputId, iconId) {
     const passInput = document.getElementById(inputId);
-    const iconSpan = document.getElementById(iconId); // Usamos el ID para buscar el elemento
+    const iconSpan = document.getElementById(iconId); 
 
-    if (!passInput || !iconSpan) return; // Evita errores si no encuentra los elementos
+    if (!passInput || !iconSpan) return;
 
     if (passInput.type === "password") {
         passInput.type = "text";
@@ -435,6 +435,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
