@@ -388,14 +388,19 @@ function showModal(title, msg, icon, isConfirm = false) {
         const cancelBtn = document.getElementById('modal-cancel-btn');
         cancelBtn.style.display = isConfirm ? "block" : "none";
 
-        // IMPORTANTE: Usamos 'flex' para que los estilos de centrado funcionen
-        m.style.display = "flex"; 
+        // FORZAMOS EL MODO FLEX PARA EL CENTRADO
+        m.style.setProperty('display', 'flex', 'important'); 
 
-        document.getElementById('modal-ok-btn').onclick = () => { m.style.display = "none"; res(true); };
-        cancelBtn.onclick = () => { m.style.display = "none"; res(false); };
+        document.getElementById('modal-ok-btn').onclick = () => {
+            m.style.setProperty('display', 'none', 'important');
+            res(true);
+        };
+        cancelBtn.onclick = () => {
+            m.style.setProperty('display', 'none', 'important');
+            res(false);
+        };
     });
 }
-
 function resetApp() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
@@ -522,6 +527,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
