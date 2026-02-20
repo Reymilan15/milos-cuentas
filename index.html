@@ -56,6 +56,11 @@
                 <input type="text" id="reg-name" placeholder="Nombre">
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
                 <input type="password" id="reg-password" placeholder="Contraseña">
+                <input type="password" id="reg-password" placeholder="Contraseña" oninput="checkPassStrength()">
+<div id="pass-strength-container" style="width: 100%; height: 5px; background: #333; margin-top: 5px; border-radius: 5px; overflow: hidden;">
+    <div id="pass-strength-bar" style="width: 0%; height: 100%; transition: 0.3s ease;"></div>
+</div>
+<small id="pass-text" style="font-size: 10px; color: #aaa;"></small>
                 <button onclick="register()" class="btn-success">Crear Cuenta</button>
                 <p style="margin-top: 15px;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: var(--primary); cursor: pointer;">Inicia sesión</span></p>
             </div>
@@ -179,6 +184,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
