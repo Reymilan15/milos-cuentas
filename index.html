@@ -152,15 +152,14 @@
         </div>
     </div>
 
-  <div id="confirm-modal" class="modal-wrapper">
-    <div class="modal-content">
-        <div style="padding: 20px; text-align: center;">
-            <h3 id="modal-title" style="margin: 0; color: black;"></h3>
-            <p id="modal-text" style="color: #666; font-size: 14px;"></p>
-        </div>
-        <div class="modal-buttons">
-            <button id="modal-confirm-btn">Aceptar</button>
-            <button onclick="closeConfirmModal()" style="color: #ff3b30;">Cancelar</button>
+  <div id="custom-modal" style="display: none;">
+    <div class="modal-content" style="background: white; padding: 20px; border-radius: 15px; text-align: center; width: 280px; color: black;">
+        <div id="modal-icon" style="font-size: 30px; margin-bottom: 10px;"></div>
+        <h3 id="modal-title" style="margin: 0;"></h3>
+        <p id="modal-text" style="font-size: 14px; color: #444;"></p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            <button id="modal-ok-btn" style="background: #007aff; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold;">Aceptar</button>
+            <button id="modal-cancel-btn" style="background: transparent; color: #ff3b30; border: none;">Cancelar</button>
         </div>
     </div>
 </div>
@@ -180,6 +179,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
