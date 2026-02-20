@@ -681,6 +681,20 @@ function checkPassStrength() {
         text.innerText = "";
     }
 }
+function togglePasswordVisibility(inputId, iconId) {
+    const passInput = document.getElementById(inputId);
+    const iconSpan = document.getElementById(iconId);
+
+    if (passInput.type === "password") {
+        // Mostrar contraseña
+        passInput.type = "text";
+        iconSpan.innerText = "🔒"; // Cambia el ojo por un candado o un ojo tachado
+    } else {
+        // Ocultar contraseña
+        passInput.type = "password";
+        iconSpan.innerText = "👁️";
+    }
+}
 window.onload = () => {
     if (currentUser) {
         entrarALaApp();
@@ -691,6 +705,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
