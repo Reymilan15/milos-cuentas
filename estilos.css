@@ -328,40 +328,27 @@ button {
 }
 
 /* Contenedor que cubre TODA la pantalla */
-.modal-wrapper {
-    display: none; /* Se activa con 'flex' desde JS */
+/* Esto asegura que el modal NO sea parte del diseño de cuadritos de la app */
+#custom-modal, #confirm-modal {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.4) !important; /* Fondo oscurecido suave */
-    backdrop-filter: blur(5px) !important; /* Desenfoque tipo iOS */
-    -webkit-backdrop-filter: blur(5px);
-    z-index: 99999 !important; /* Por encima de todo */
-    
-    /* ESTO ES LO QUE LO CENTRA */
-    justify-content: center !important;
-    align-items: center !important;
     margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-/* La ventanilla blanca tipo iOS */
 .modal-content {
-    background: rgba(255, 255, 255, 0.9) !important;
-    width: 80% !important;
-    max-width: 280px !important;
-    border-radius: 14px !important;
-    padding: 20px 0 0 0 !important; /* Padding ajustado para los botones */
+    background: white !important;
+    color: black !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    width: 280px !important;
     text-align: center !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
-    animation: zoomIn 0.2s ease-out;
-    color: #000 !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
+    border: none !important;
 }
 
-/* Título y texto */
-#modal-title { font-weight: 600; font-size: 17px; margin-bottom: 5px; color: #000; }
-#modal-text { font-size: 13px; padding: 0 15px 15px 15px; color: #000; border-bottom: 0.5px solid #ccc; }
+#modal-title { color: black !important; font-weight: bold !important; }
+#modal-text { color: #444 !important; }
 
 /* Botones estilo iPhone */
 .modal-buttons { display: flex; flex-direction: column; }
@@ -497,6 +484,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
