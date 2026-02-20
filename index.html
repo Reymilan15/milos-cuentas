@@ -1,12 +1,3 @@
-Para solucionar el problema de registro sin arruinar nada, he identificado que tu HTML tiene dos errores estructurales críticos que bloquean el JavaScript:
-
-Etiquetas duplicadas: Tenías un <body> extra y un </div> mal cerrado al final que rompía la lógica del modal.
-
-ID de Modal faltante: Tu función showModal en el JS busca un elemento llamado custom-modal para mostrar errores, pero en tu HTML solo tenías el de confirm-modal.
-
-Aquí tienes el HTML corregido. He mantenido todo tu diseño y clases intactas, solo arreglé la estructura para que el registro de gastos funcione:
-
-HTML
 
 <!DOCTYPE html>
 <html lang="es">
@@ -188,6 +179,7 @@ HTML
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
