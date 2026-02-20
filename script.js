@@ -256,27 +256,22 @@ async function register() {
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
 
-    // VALIDACIÓN: Solo letras en Nombre y Apellido
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name)) {
         return await showModal("Error", "El nombre solo puede contener letras", "👤");
     }
 
-    // VALIDACIÓN: Usuario letras y números (sin espacios)
     if (!/^[a-zA-Z0-9]{4,}$/.test(username)) {
         return await showModal("Error", "Usuario debe ser de al menos 4 caracteres (letras y números)", "🆔");
     }
 
-    // VALIDACIÓN: Correo estricto (nombre@dominio.algo)
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return await showModal("Error", "Ingresa un correo válido (ej: nombre@gmail.com)", "📧");
     }
 
-    // VALIDACIÓN: Contraseña segura
     if (password.length < 8 || !/[0-9]/.test(password)) {
         return await showModal("Seguridad", "La contraseña debe tener 8+ caracteres y al menos un número", "🔒");
     }
 
-    // Si todo está bien, enviamos a la base de datos
     try {
         const res = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
@@ -393,14 +388,12 @@ function setBudget() {
     }
 
     if (limit > total) {
-        // Lógica del modal de confirmación...
         const modal = document.getElementById('confirm-modal');
         modal.style.display = "flex";
-        // ... (resto de tu lógica de clic)
     } else {
         confirmSetBudget(total, limit);
     }
-} // <--- ESTA LLAVE ES LA QUE EVITA EL ERROR EN REGISTRAR GASTO
+} 
 
 async function confirmSetBudget(total, limit) {
     budgetVES = total;
@@ -415,7 +408,6 @@ async function confirmSetBudget(total, limit) {
     renderAll();
     await syncToCloud();
     
-    // Usamos tu función showModal para el éxito
     showModal("¡Listo!", "Presupuesto actualizado", "✅");
 }
 
@@ -424,16 +416,12 @@ function closeConfirmModal() {
     if (modal) modal.style.display = "none";
 }
 
-// Aseguramos que al cargar la página NADA aparezca por error
 document.addEventListener('DOMContentLoaded', () => {
     const cm = document.getElementById('confirm-modal');
     if (cm) cm.style.display = 'none';
     const cu = document.getElementById('custom-modal');
     if (cu) cu.style.display = 'none';
 });
-function closeConfirmModal() {
-    document.getElementById('confirm-modal').style.display = "none";
-}
 
 async function deleteTransaction(id) {
     if (await showModal("Borrar", "¿Eliminar este gasto?", "🗑️", true)) {
@@ -529,12 +517,6 @@ async function resetApp() {
         
         // Efecto visual de reinicio
         location.reload(); 
-    }
-}
-function closeConfirmModal() {
-    const modalConfirm = document.getElementById('confirm-modal');
-    if (modalConfirm) {
-        modalConfirm.style.setProperty('display', 'none', 'important');
     }
 }
 
@@ -705,6 +687,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
