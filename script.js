@@ -475,14 +475,33 @@ function showModal(title, msg, icon, isConfirm = false) {
         }
     });
 }
-function resetApp() {
-    const modalConfirm = document.getElementById('confirm-modal');
-    if (modalConfirm) {
-        // Al usar flex, se activa el centrado del CSS automáticamente
-        modalConfirm.style.setProperty('display', 'flex', 'important');
+async function resetApp() {
+    // Usamos el showModal que ya está programado para centrar y bloquear
+    const confirma = await showModal(
+        "¿Restablecer todo?", 
+        "Esta acción borrará todos tus gastos y presupuesto. No se puede deshacer.", 
+        "⚠️", 
+        true // Esto activa el botón de cancelar
+    );
+
+    if (confirma) {
+        // Lógica de borrado real
+        transactions = [];
+        budgetVES = 0;
+        spendingLimitVES = 0;
+        
+        if (currentUser) {
+            currentUser.transactions = [];
+            currentUser.budget = 0;
+            currentUser.spendingLimit = 0;
+            localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
+            await syncToCloud();
+        }
+        
+        // Efecto visual de reinicio
+        location.reload(); 
     }
 }
-
 function closeConfirmModal() {
     const modalConfirm = document.getElementById('confirm-modal');
     if (modalConfirm) {
@@ -601,6 +620,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
