@@ -395,11 +395,17 @@ function toggleCategoryDetails() {
     list.style.display = list.style.display === 'none' ? 'block' : 'none';
 }
 
-function togglePasswordVisibility(inputId, iconId) {
+function togglePasswordVisibility(inputId, iconElement) {
     const passInput = document.getElementById(inputId);
-    const iconSpan = document.getElementById(iconId);
-    passInput.type = passInput.type === "password" ? "text" : "password";
-    iconSpan.innerText = passInput.type === "password" ? "👁️" : "🔒";
+    if (!passInput) return;
+
+    if (passInput.type === "password") {
+        passInput.type = "text";
+        iconElement.innerText = "🔒"; // O "🙈"
+    } else {
+        passInput.type = "password";
+        iconElement.innerText = "👁️"; // O "👁️‍🗨️"
+    }
 }
 
 function checkPassStrength() {
@@ -427,6 +433,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
