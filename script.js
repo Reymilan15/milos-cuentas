@@ -1,10 +1,3 @@
-He analizado tu código de script.js a fondo. Tienes un conflicto importante: estás mezclando la lógica vieja de modales (que busca elementos que ya borramos del HTML, como modal-confirm-btn) con la lógica nueva basada en Promises (showModal). Esto hace que el botón de "Fijar Presupuesto" y el de "Resetear" se queden "colgados".
-
-Aquí tienes el código de tu script.js completamente saneado. He mantenido todas tus funciones funcionales (gráficas, categorías, tasa BCV) pero he corregido la gestión del presupuesto y los modales para que coincidan con el HTML unificado que te pasé.
-
-Reemplaza TODO tu script.js con este bloque:
-
-JavaScript
 
 var API_URL = "https://milos-cuentas.onrender.com"; 
 
@@ -434,6 +427,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
