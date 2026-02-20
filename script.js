@@ -395,16 +395,16 @@ function toggleCategoryDetails() {
     list.style.display = list.style.display === 'none' ? 'block' : 'none';
 }
 
-function togglePasswordVisibility(inputId, iconElement) {
+function togglePasswordVisibility(inputId, iconId) {
     const passInput = document.getElementById(inputId);
-    if (!passInput) return;
+    const iconSpan = document.getElementById(iconId);
 
     if (passInput.type === "password") {
         passInput.type = "text";
-        iconElement.innerText = "🔒"; // O "🙈"
+        iconSpan.innerText = "🔒"; 
     } else {
         passInput.type = "password";
-        iconElement.innerText = "👁️"; // O "👁️‍🗨️"
+        iconSpan.innerText = "👁️"; 
     }
 }
 
@@ -433,6 +433,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
