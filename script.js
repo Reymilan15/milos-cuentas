@@ -357,23 +357,21 @@ function renderFullHistory() {
 }
 
 function setBudget() {
-    const total = parseFloat(document.getElementById('total-budget').value);
-    const limit = parseFloat(document.getElementById('spending-limit').value);
-
-    // Si el límite es mayor al presupuesto, lanzamos la alerta centrada
-    if (limit > total) {
-        const modal = document.getElementById('confirm-modal');
-        modal.style.display = "flex"; // Esto activa el centrado
-        
-        document.getElementById('modal-confirm-btn').onclick = function() {
-            // Aquí pones la lógica para guardar si el usuario acepta
-            modal.style.display = "none";
-            confirmSetBudget(total, limit); 
-        };
-        return;
+   function confirmSetBudget(total, limit) {
+    budgetVES = total;
+    spendingLimitVES = limit;
+    
+    if(currentUser) {
+        currentUser.budget = budgetVES;
+        currentUser.spendingLimit = spendingLimitVES;
+        localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
     }
-    // Si todo está bien, guarda normal
-    saveBudget(total, limit);
+    
+    renderAll();
+    syncToCloud();
+    
+    // Aviso de éxito centrado
+    showModal("¡Listo!", "Presupuesto actualizado correctamente", "✅");
 }
 
 function closeConfirmModal() {
@@ -560,6 +558,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
