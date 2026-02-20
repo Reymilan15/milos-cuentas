@@ -441,55 +441,31 @@ function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
 function showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
         const m = document.getElementById('custom-modal');
-        if (!m) {
-            console.error("El elemento 'custom-modal' no existe en el HTML");
-            res(true); // Permitimos que la app siga aunque no haya modal
-            return;
-        }
-
-        // Buscamos los elementos con seguridad
         const titleEl = document.getElementById('modal-title');
         const textEl = document.getElementById('modal-text');
         const iconEl = document.getElementById('modal-icon');
         const okBtn = document.getElementById('modal-ok-btn');
         const cancelBtn = document.getElementById('modal-cancel-btn');
 
-        if (titleEl) titleEl.innerText = title;
-        if (textEl) textEl.innerText = msg;
-        if (iconEl) iconEl.innerText = icon;
+        titleEl.innerText = title;
+        textEl.innerText = msg;
+        iconEl.innerText = icon;
         
-        if (cancelBtn) cancelBtn.style.display = isConfirm ? "block" : "none";
+        // Si es confirmación (como el Reset), mostramos el botón cancelar
+        cancelBtn.style.display = isConfirm ? "block" : "none";
+        okBtn.innerText = isConfirm ? "Confirmar" : "Aceptar";
 
-        // Estilo de iPhone centrado (Capa superior)
-        m.style.cssText = `
-            display: flex !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            backdrop-filter: blur(8px) !important;
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 999999 !important;
-            justify-content: center !important;
-            align-items: center !important;
-            margin: 0 !important;
-        `;
+        m.style.display = "flex"; // Lo mostramos centrado
 
-        if (okBtn) {
-            okBtn.onclick = () => {
-                m.style.display = "none";
-                res(true);
-            };
-        }
+        okBtn.onclick = () => {
+            m.style.display = "none";
+            res(true);
+        };
 
-        if (cancelBtn) {
-            cancelBtn.onclick = () => {
-                m.style.display = "none";
-                res(false);
-            };
-        }
+        cancelBtn.onclick = () => {
+            m.style.display = "none";
+            res(false);
+        };
     });
 }
 async function resetApp() {
@@ -687,6 +663,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
