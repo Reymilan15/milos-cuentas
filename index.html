@@ -48,13 +48,13 @@
            <div id="login-form-container">
     <input type="text" id="username" placeholder="Usuario o Correo">
     
-    <div style="position: relative; width: 100%;">
-        <input type="password" id="login-password" placeholder="Contraseña">
-        <span id="toggle-pass-login" onclick="togglePasswordVisibility('login-password', 'toggle-pass-login')" 
-              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">
-            👁️
-        </span>
-    </div>
+   <div style="position: relative; width: 100%;">
+    <input type="password" id="reg-password" placeholder="Contraseña" oninput="checkPassStrength()">
+    <span id="toggle-pass-reg" onclick="togglePasswordVisibility('reg-password', 'toggle-pass-reg')" 
+          style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">
+        👁️
+    </span>
+</div>
 
     <button onclick="login()" class="btn-primary">Entrar a mi Cuenta</button>
     <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)" style="color: var(--primary); cursor: pointer;">Regístrate aquí</span></p>
@@ -201,6 +201,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
