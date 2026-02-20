@@ -649,7 +649,49 @@ function toggleCategoryDetails() {
         btn.style.background = 'var(--primary)';
     }
 }
+function checkPassStrength() {
+    const pass = document.getElementById('reg-password').value;
+    const bar = document.getElementById('pass-strength-bar');
+    const text = document.getElementById('pass-text');
+    
+    let strength = 0;
 
+    // Reglas de puntuación
+    if (pass.length >= 8) strength++; // Longitud mínima
+    if (/[A-Z]/.test(pass)) strength++; // Tiene mayúsculas
+    if (/[0-9]/.test(pass)) strength++; // Tiene números
+    if (/[^A-Za-z0-9]/.test(pass)) strength++; // Tiene símbolos
+
+    // Colores y mensajes según la fuerza
+    switch (strength) {
+        case 0:
+        case 1:
+            bar.style.width = "25%";
+            bar.style.backgroundColor = "#ff4d4d"; // Rojo (Muy débil)
+            text.innerText = "Muy débil";
+            break;
+        case 2:
+            bar.style.width = "50%";
+            bar.style.backgroundColor = "#ffa500"; // Naranja (Media)
+            text.innerText = "Media - Mezcla letras y números";
+            break;
+        case 3:
+            bar.style.width = "75%";
+            bar.style.backgroundColor = "#2ecc71"; // Verde (Segura)
+            text.innerText = "Segura";
+            break;
+        case 4:
+            bar.style.width = "100%";
+            bar.style.backgroundColor = "#00d4ff"; // Azul (Muy fuerte)
+            text.innerText = "¡Contraseña blindada!";
+            break;
+    }
+    
+    if (pass === "") {
+        bar.style.width = "0%";
+        text.innerText = "";
+    }
+}
 window.onload = () => {
     if (currentUser) {
         entrarALaApp();
@@ -660,6 +702,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
