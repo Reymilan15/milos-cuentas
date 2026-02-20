@@ -378,16 +378,21 @@ function toggleAuth(isReg) {
 }
 function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
 
-function showModal(title, msg, icon, isConfirm = false) {
+unction showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
         const m = document.getElementById('custom-modal');
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = msg;
         document.getElementById('modal-icon').innerText = icon;
-        document.getElementById('modal-cancel-btn').style.display = isConfirm ? "block" : "none";
-        m.style.display = "flex";
+        
+        const cancelBtn = document.getElementById('modal-cancel-btn');
+        cancelBtn.style.display = isConfirm ? "block" : "none";
+
+        // IMPORTANTE: Usamos 'flex' para que los estilos de centrado funcionen
+        m.style.display = "flex"; 
+
         document.getElementById('modal-ok-btn').onclick = () => { m.style.display = "none"; res(true); };
-        document.getElementById('modal-cancel-btn').onclick = () => { m.style.display = "none"; res(false); };
+        cancelBtn.onclick = () => { m.style.display = "none"; res(false); };
     });
 }
 
@@ -517,6 +522,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
