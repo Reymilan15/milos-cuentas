@@ -397,7 +397,8 @@ function toggleCategoryDetails() {
 
 function togglePasswordVisibility(inputId, iconId) {
     const passInput = document.getElementById(inputId);
-    const iconSpan = document.getElementById(iconId); 
+    const iconSpan = document.getElementById(iconId);
+
 
     if (!passInput || !iconSpan) return;
 
@@ -435,6 +436,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
