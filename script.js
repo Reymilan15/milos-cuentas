@@ -378,7 +378,7 @@ function toggleAuth(isReg) {
 }
 function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
 
-unction showModal(title, msg, icon, isConfirm = false) {
+function showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
         const m = document.getElementById('custom-modal');
         document.getElementById('modal-title').innerText = title;
@@ -522,6 +522,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
