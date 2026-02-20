@@ -331,9 +331,33 @@ button {
 /* Esto asegura que el modal NO sea parte del diseño de cuadritos de la app */
 #custom-modal, #confirm-modal {
     position: fixed !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: none; /* Se activa por JS */
+    justify-content: center !important;
+    align-items: center !important;
+    background: rgba(0, 0, 0, 0.7) !important; /* Fondo oscuro */
+    backdrop-filter: blur(5px) !important;
+    z-index: 1000000 !important;
+}
+
+.modal-content {
+    background: white !important;
+    padding: 25px !important;
+    border-radius: 20px !important;
+    width: 300px !important;
+    max-width: 90% !important;
+    text-align: center !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+    animation: zoomIn 0.2s ease-out;
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 }
 
 .modal-content {
@@ -484,6 +508,7 @@ button {
     .buttons-container-unused, .modal-footer-fake {
     display: none !important;
 }
+
 
 
 
