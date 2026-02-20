@@ -398,6 +398,8 @@ function updateChartFilter(f) { currentChartFilter = f; renderChart(); }
 function showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
         const m = document.getElementById('custom-modal');
+        const mContent = m.querySelector('.modal-content');
+        
         document.getElementById('modal-title').innerText = title;
         document.getElementById('modal-text').innerText = msg;
         document.getElementById('modal-icon').innerText = icon;
@@ -405,15 +407,29 @@ function showModal(title, msg, icon, isConfirm = false) {
         const cancelBtn = document.getElementById('modal-cancel-btn');
         cancelBtn.style.display = isConfirm ? "block" : "none";
 
-        // FORZAMOS EL MODO FLEX PARA EL CENTRADO
-        m.style.setProperty('display', 'flex', 'important'); 
+        // CONFIGURACIÓN PARA CENTRADO TOTAL
+        m.style.cssText = `
+            display: flex !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999999 !important;
+            justify-content: center !important;
+            align-items: center !important;
+            margin: 0 !important;
+        `;
 
         document.getElementById('modal-ok-btn').onclick = () => {
-            m.style.setProperty('display', 'none', 'important');
+            m.style.display = "none";
             res(true);
         };
         cancelBtn.onclick = () => {
-            m.style.setProperty('display', 'none', 'important');
+            m.style.display = "none";
             res(false);
         };
     });
@@ -544,6 +560,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
