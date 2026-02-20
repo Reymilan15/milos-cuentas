@@ -412,15 +412,12 @@ function togglePasswordVisibility(inputId, iconId) {
 }
 
 function checkPassStrength() {
-    const pass = document.getElementById('reg-password').value;
+    const passInput = document.getElementById('reg-password-input');
+    if (!passInput) return; 
+    const pass = passInput.value;
     const bar = document.getElementById('pass-strength-bar');
     const text = document.getElementById('pass-text');
-    let s = pass.length >= 8 ? 1 : 0;
-    if (/[0-9]/.test(pass)) s++;
-    if (/[A-Z]/.test(pass)) s++;
-    bar.style.width = (s * 33) + "%";
-    bar.style.backgroundColor = s === 3 ? "green" : s === 2 ? "orange" : "red";
-    text.innerText = s === 3 ? "Fuerte" : s === 2 ? "Media" : "Débil";
+
 }
 
 function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
@@ -436,6 +433,7 @@ window.onload = () => {
     fetchBCVRate();
     if (currentUser) entrarALaApp();
 };
+
 
 
 
