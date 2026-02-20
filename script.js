@@ -357,7 +357,39 @@ function renderFullHistory() {
 }
 
 function setBudget() {
-   function confirmSetBudget(total, limit) {
+    const totalInput = document.getElementById('total-budget');
+    const limitInput = document.getElementById('spending-limit');
+    
+    const total = parseFloat(totalInput.value) || 0;
+    const limit = parseFloat(limitInput.value) || 0;
+
+    if (total <= 0) {
+        showModal("Error", "Ingresa un presupuesto válido", "💰");
+        return;
+    }
+
+    // Si el límite es mayor al presupuesto, lanzamos la alerta centrada estilo iPhone
+    if (limit > total) {
+        const modal = document.getElementById('confirm-modal');
+        if (modal) {
+            document.getElementById('modal-title').innerText = "Límite Elevado";
+            document.getElementById('modal-text').innerText = `Tu límite (${fmt(limit)} BS) supera tu presupuesto. ¿Deseas fijarlo así?`;
+            
+            // Forzamos el centrado total sobre la pantalla
+            modal.style.cssText = "display: flex !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; justify-content: center; align-items: center; z-index: 999999; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);";
+            
+            document.getElementById('modal-confirm-btn').onclick = function() {
+                closeConfirmModal();
+                confirmSetBudget(total, limit); 
+            };
+        }
+    } else {
+        confirmSetBudget(total, limit);
+    }
+}
+
+// Función separada (ya no está dentro de setBudget)
+async function confirmSetBudget(total, limit) {
     budgetVES = total;
     spendingLimitVES = limit;
     
@@ -368,12 +400,22 @@ function setBudget() {
     }
     
     renderAll();
-    syncToCloud();
-    
-    // Aviso de éxito centrado
+    await syncToCloud();
     showModal("¡Listo!", "Presupuesto actualizado correctamente", "✅");
 }
 
+function closeConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    if (modal) modal.style.display = "none";
+}
+
+// Aseguramos que al cargar la página NADA aparezca por error
+document.addEventListener('DOMContentLoaded', () => {
+    const cm = document.getElementById('confirm-modal');
+    if (cm) cm.style.display = 'none';
+    const cu = document.getElementById('custom-modal');
+    if (cu) cu.style.display = 'none';
+});
 function closeConfirmModal() {
     document.getElementById('confirm-modal').style.display = "none";
 }
@@ -558,6 +600,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
