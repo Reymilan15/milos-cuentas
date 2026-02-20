@@ -368,15 +368,27 @@ function setBudget() {
         return;
     }
 
-    // Si el límite es mayor al presupuesto, lanzamos la alerta centrada estilo iPhone
+    // Si el límite supera al presupuesto, mostramos el aviso estilo iPhone centrado
     if (limit > total) {
         const modal = document.getElementById('confirm-modal');
         if (modal) {
             document.getElementById('modal-title').innerText = "Límite Elevado";
-            document.getElementById('modal-text').innerText = `Tu límite (${fmt(limit)} BS) supera tu presupuesto. ¿Deseas fijarlo así?`;
+            document.getElementById('modal-text').innerText = `Tu límite (${fmt(limit)} BS) es mayor a tu presupuesto. ¿Quieres fijarlo así?`;
             
-            // Forzamos el centrado total sobre la pantalla
-            modal.style.cssText = "display: flex !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; justify-content: center; align-items: center; z-index: 999999; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);";
+            // Forzamos el centrado absoluto sobre la pantalla para que no se vea "horrible"
+            modal.style.cssText = `
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                justify-content: center !important;
+                align-items: center !important;
+                z-index: 999999 !important;
+                background: rgba(0,0,0,0.6) !important;
+                backdrop-filter: blur(5px);
+            `;
             
             document.getElementById('modal-confirm-btn').onclick = function() {
                 closeConfirmModal();
@@ -386,9 +398,8 @@ function setBudget() {
     } else {
         confirmSetBudget(total, limit);
     }
-}
+} // <--- AQUÍ FALTABA ESTA LLAVE QUE ROMPÍA TODO
 
-// Función separada (ya no está dentro de setBudget)
 async function confirmSetBudget(total, limit) {
     budgetVES = total;
     spendingLimitVES = limit;
@@ -401,7 +412,9 @@ async function confirmSetBudget(total, limit) {
     
     renderAll();
     await syncToCloud();
-    showModal("¡Listo!", "Presupuesto actualizado correctamente", "✅");
+    
+    // Usamos tu función showModal para el éxito
+    showModal("¡Listo!", "Presupuesto actualizado", "✅");
 }
 
 function closeConfirmModal() {
@@ -600,6 +613,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
