@@ -251,19 +251,59 @@ async function login() {
 }
 
 async function register() {
-    const username = document.getElementById('reg-username').value;
-    const name = document.getElementById('reg-name').value;
-    const email = document.getElementById('reg-email').value;
+    const username = document.getElementById('reg-username').value.trim();
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
+
+    // --- VALIDACIONES ESTRICTAS ---
+
+    // 1. Nombre y Apellido: Solo letras (incluyendo acentos y ñ) y espacios.
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (!nameRegex.test(name) || name.length < 3) {
+        await showModal("Nombre Inválido", "El nombre solo debe contener letras y al menos 3 caracteres.", "👤");
+        return;
+    }
+
+    // 2. Usuario: Letras y números, sin espacios (mínimo 4 caracteres).
+    const userRegex = /^[a-zA-Z0-9]+$/;
+    if (!userRegex.test(username) || username.length < 4) {
+        await showModal("Usuario Inválido", "El usuario debe ser alfanumérico (letras y números) y sin espacios.", "🆔");
+        return;
+    }
+
+    // 3. Correo: Valida formato nombre@dominio.com
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+        await showModal("Correo Inválido", "Ingresa un correo electrónico real (ejemplo@correo.com).", "📧");
+        return;
+    }
+
+    // 4. Contraseña Segura: Mínimo 8 caracteres, al menos una letra y un número.
+    const passRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*]{8,}$/;
+    if (!passRegex.test(password)) {
+        await showModal("Contraseña Débil", "La contraseña debe tener al menos 8 caracteres, incluyendo letras y números.", "🔒");
+        return;
+    }
+
+
     try {
         const res = await fetch(`${API_URL}/api/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, name, email, password })
         });
-        if (res.ok) { showModal("Éxito", "Cuenta creada", "🎉"); toggleAuth(false); }
-        else showModal("Error", "El usuario ya existe", "🚫");
-    } catch (e) { showModal("Error", "Error de conexión", "🌐"); }
+        
+        if (res.ok) { 
+            await showModal("¡Éxito!", "Cuenta creada correctamente. Ya puedes iniciar sesión.", "🎉"); 
+            toggleAuth(false); 
+        } else { 
+            const errorData = await res.json();
+            showModal("Error", errorData.message || "El usuario o correo ya existen", "🚫"); 
+        }
+    } catch (e) { 
+        showModal("Error", "Error de conexión con el servidor", "🌐"); 
+    }
 }
 
 function entrarALaApp() {
@@ -620,6 +660,7 @@ window.onload = () => {
         fetchBCVRate();
     }
 };
+
 
 
 
