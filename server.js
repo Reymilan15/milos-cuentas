@@ -1,149 +1,140 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch'); 
 const https = require('https');
 const cors = require('cors');
-const mongoose = require('mongoose');
+
+// --- CONEXIÓN A MONGODB ---
+// Esto activa el archivo database.js que creamos anteriormente
+require('./database'); 
 
 const app = express();
-const PORT = process.env.PORT || 10000; 
+const PORT = process.env.PORT || 3000;
 
-// --- 1. CONFIGURACIÓN DE MIDDLEWARES ---
-// Colocamos CORS al principio para que todas las rutas tengan permiso
-app.use(cors({
-    origin: '*', // Permite que cualquier sitio (como tu frontend en Render) se conecte
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-}));
+const publicPath = path.join(__dirname, 'public'); 
+const DB_FILE = path.join(__dirname, 'database.json');
 
-app.use(express.json());
-app.use(express.static(__dirname));
-
-// --- 2. CONEXIÓN A MONGO CON MANEJO DE ERRORES ---
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-    console.error("❌ ERROR: La variable MONGO_URI no está configurada en Render.");
-} else {
-    mongoose.connect(MONGO_URI)
-        .then(() => console.log("✅ Conexión exitosa a MongoDB Atlas"))
-        .catch(err => console.error("❌ Error de conexión a MongoDB:", err));
-}
-
-// Esquema de Usuario
-const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true },
-    name: { type: String, default: "" },
-    lastname: { type: String, default: "" },
-    budget: { type: Number, default: 0 },
-    spendingLimit: { type: Number, default: 0 },
-    transactions: { type: Array, default: [] }
-});
-
-const User = mongoose.model('User', userSchema);
-
-// --- 3. TASAS DE CAMBIO ---
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
+app.use(cors()); 
+app.use(express.json());
+
+app.use(express.static(publicPath));
+
+// --- VARIABLES DE TASAS ---
 let currentRates = { "USD": 36.30, "EUR": 39.50, "VES": 1 };
 
+// --- ACTUALIZACIÓN DE TASAS (Cumpliendo tu requerimiento diario) ---
 async function updateExchangeRates() {
     try {
+        console.log("🔄 Actualizando tasas oficiales desde DolarApi...");
         const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', { agent: httpsAgent });
         const data = await response.json();
+        
         if (data && data.promedio) {
             currentRates.USD = data.promedio;
+            // Cálculo automático del Euro basado en el mercado internacional (aprox 1.08)
             currentRates.EUR = data.promedio * 1.08;
-            console.log(`✅ Tasas actualizadas: ${currentRates.USD} BS`);
+            console.log(`✅ Tasa actualizada hoy: ${currentRates.USD} BS`);
+            
+            /* NOTA: Aquí podrías añadir una línea para guardar 
+               esta tasa en MongoDB Atlas automáticamente cada vez que cambie.
+            */
         }
-    } catch (e) { 
-        console.error("⚠️ Error al obtener tasas, usando valores previos."); 
+    } catch (error) {
+        console.error("❌ Error en API de tasas. Usando valores por defecto.");
     }
 }
+
 updateExchangeRates();
-setInterval(updateExchangeRates, 3600000); // Actualiza cada hora
+setInterval(updateExchangeRates, 3600000); // Se actualiza cada hora
 
-// --- 4. RUTAS DE LA API ---
-
-// Registro de usuarios
-app.post('/api/register', async (req, res) => {
+// --- MANEJO DE BASE DE DATOS LOCAL (JSON) ---
+// Mantengo estas funciones intactas según tus instrucciones
+const readDB = () => {
     try {
-        const { username, name, lastname, email, password } = req.body;
-        
-        if(!username || !email || !password) {
-            return res.status(400).json({ error: "Faltan campos obligatorios" });
+        if (!fs.existsSync(DB_FILE)) {
+            fs.writeFileSync(DB_FILE, JSON.stringify({}));
+            return {};
         }
+        const data = fs.readFileSync(DB_FILE, 'utf-8');
+        return data.trim() ? JSON.parse(data) : {};
+    } catch (error) { return {}; }
+};
 
-        const newUser = new User({ 
-            username: username.toLowerCase().trim(), 
-            name, 
-            lastname, 
-            email: email.toLowerCase().trim(), 
-            password 
-        });
+const writeDB = (data) => {
+    try { fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); } 
+    catch (error) { console.error("Error al escribir:", error); }
+};
 
-        await newUser.save();
-        res.json({ message: "Registro exitoso" });
-    } catch (error) {
-        console.error("Error en registro:", error);
-        res.status(400).json({ error: "El usuario o email ya está registrado." });
-    }
+// --- RUTAS DE LA API ---
+
+app.get('/set-rate/:valor', (req, res) => {
+    const nuevoValor = parseFloat(req.params.valor);
+    if (!isNaN(nuevoValor)) {
+        currentRates.USD = nuevoValor;
+        currentRates.EUR = nuevoValor * 1.09; 
+        res.send(`<body style="font-family:sans-serif;text-align:center;padding:50px;">
+                    <h1 style="color:green;">✅ Tasa Actualizada Manualmente</h1>
+                    <p>Nuevo valor: <b>${nuevoValor} BS</b></p>
+                  </body>`);
+    } else { res.status(400).send("Valor no válido"); }
 });
 
-// Inicio de sesión
-app.post('/api/login', async (req, res) => {
-    try {
-        const { identifier, password } = req.body;
-        if(!identifier || !password) return res.status(400).json({ error: "Datos incompletos" });
-
-        const cleanId = identifier.toLowerCase().trim();
-        const user = await User.findOne({
-            $or: [{ username: cleanId }, { email: cleanId }]
-        });
-
-        if (!user || user.password !== password) {
-            return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
-        }
-
-        res.json({ 
-            username: user.username,
-            name: user.name,
-            lastname: user.lastname,
-            budget: user.budget,
-            spendingLimit: user.spendingLimit,
-            transactions: user.transactions,
-            rates: currentRates 
-        });
-    } catch (e) {
-        res.status(500).json({ error: "Error interno del servidor" });
-    }
+app.post('/api/register', (req, res) => {
+    const { username, name, lastname, email, password } = req.body;
+    const db = readDB();
+    const cleanUser = username.toLowerCase().trim();
+    if (db[cleanUser]) return res.status(400).json({ error: "El usuario ya existe." });
+    db[cleanUser] = { name, lastname, email, password, budget: 0, spendingLimit: 0, transactions: [] };
+    writeDB(db);
+    res.json({ message: "Registro exitoso" });
 });
 
-// Guardar datos (Sincronización)
-app.post('/api/save', async (req, res) => {
-    try {
-        const { username, budget, spendingLimit, transactions } = req.body;
-        if(!username) return res.status(400).json({ error: "Sesión inválida" });
-        
-        await User.findOneAndUpdate(
-            { username: username.toLowerCase().trim() },
-            { budget, spendingLimit, transactions }
-        );
+app.post('/api/login', (req, res) => {
+    const { identifier, password } = req.body;
+    const db = readDB();
+    const cleanId = identifier?.toLowerCase().trim();
+    const userKey = Object.keys(db).find(key => 
+        key === cleanId || (db[key].email && db[key].email.toLowerCase() === cleanId)
+    );
+    const user = db[userKey];
+    if (!user || user.password !== password) return res.status(401).json({ error: "Credenciales incorrectas." });
+
+    res.json({ 
+        username: userKey,
+        name: user.name,
+        lastname: user.lastname,
+        budget: user.budget,
+        spendingLimit: user.spendingLimit || 0,
+        transactions: user.transactions,
+        rates: currentRates 
+    });
+});
+
+app.post('/api/save', (req, res) => {
+    const { username, budget, spendingLimit, transactions } = req.body;
+    const db = readDB();
+    const cleanUser = username?.toLowerCase().trim();
+    if (db[cleanUser]) {
+        db[cleanUser].budget = budget;
+        db[cleanUser].spendingLimit = spendingLimit;
+        db[cleanUser].transactions = transactions;
+        writeDB(db);
         res.json({ status: "success" });
-    } catch (error) {
-        res.status(500).json({ error: "No se pudieron guardar los datos." });
+    } else {
+        res.status(404).json({ error: "Usuario no encontrado" });
     }
 });
 
-// Servir el frontend para cualquier otra ruta
 app.get('*', (req, res) => { 
-    res.sendFile(path.join(__dirname, 'index.html')); 
+    res.sendFile(path.join(publicPath, 'index.html')); 
 });
 
-// Iniciar servidor
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+app.listen(PORT, () => {
+    console.log(`✅ Servidor Mil Cuentas activo en: http://localhost:${PORT}`);
+    console.log(`📂 Sirviendo desde la carpeta: ${publicPath}`);
 });
 
 
