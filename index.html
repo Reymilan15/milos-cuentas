@@ -32,6 +32,8 @@
             <a href="#" onclick="showSection('inicio')">🏠 Inicio</a>
             <a href="#" onclick="showSection('registros')">📝 Libro de Gastos</a> 
             <a href="#" onclick="showSection('stats')">📊 Estadísticas</a>
+            <a href="#" onclick="showSection('calendario')">📅 Calendario</a>
+            <a href="#" onclick="showTutorial()" style="color: var(--primary) !important; border-top: 1px solid var(--border); margin-top: 10px;">❓ Ayuda</a>
         </nav>
         <div class="sidebar-footer">
             <button onclick="logout()" class="btn-logout">Cerrar Sesión</button>
@@ -47,43 +49,35 @@
             <h2 id="auth-title">Iniciar Sesión</h2>
             
             <div id="login-form-container">
-                <input type="text" id="username" placeholder="Usuario o Correo">
-                
+                <input type="text" id="login-user" placeholder="Usuario o Correo">
                 <div style="position: relative; width: 100%;">
-                    <input type="password" id="login-password" placeholder="Contraseña">
-                    <span id="toggle-pass-login" 
-                          onclick="togglePasswordVisibility('login-password', 'toggle-pass-login')"
-                          style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">
-                        👁️
-                    </span>
+                    <input type="password" id="login-pass" placeholder="Contraseña">
+                    <span id="toggle-pass-login" onclick="togglePasswordVisibility('login-pass', 'toggle-pass-login')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">👁️</span>
                 </div>
                 <button onclick="login()" class="btn-primary" style="margin-top: 15px;">Entrar a mi Cuenta</button>
                 <p style="margin-top: 15px;">¿No tienes cuenta? <span class="link-text" onclick="toggleAuth(true)" style="color: var(--primary); cursor: pointer;">Regístrate aquí</span></p>
-            </div> <div id="register-form-container" style="display: none;">
+            </div>
+
+            <div id="register-form-container" style="display: none;">
                 <input type="text" id="reg-username" placeholder="Usuario">
                 <input type="text" id="reg-name" placeholder="Nombre completo">
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
-                
                 <div style="position: relative; width: 100%; margin-top: 10px;">
                     <input type="password" id="reg-password-input" placeholder="Contraseña" oninput="checkPassStrength()">
-                    <span id="toggle-pass-reg" 
-                          onclick="togglePasswordVisibility('reg-password-input', 'toggle-pass-reg')" 
-                          style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">
-                        👁️
-                    </span>
+                    <span id="toggle-pass-reg" onclick="togglePasswordVisibility('reg-password-input', 'toggle-pass-reg')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px;">👁️</span>
                 </div>
-
                 <div id="pass-strength-container" style="width: 100%; height: 5px; background: #333; margin-top: 8px; border-radius: 5px; overflow: hidden;">
                     <div id="pass-strength-bar" style="width: 0%; height: 100%; transition: 0.3s ease;"></div>
                 </div>
                 <small id="pass-text" style="font-size: 10px; color: #aaa; display: block; margin-top: 2px;"></small>
-
                 <button onclick="register()" class="btn-success" style="margin-top: 15px; width: 100%;">Crear Cuenta</button>
-                
-                <p style="margin-top: 15px; text-align: center;">
-                    ¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: var(--primary); cursor: pointer; font-weight: bold;">Inicia sesión</span>
-                </p>
-            </div> </div> </div> <div id="app-container" class="app-container" style="display: none;">
+                <p style="margin-top: 15px; text-align: center;">¿Ya tienes cuenta? <span class="link-text" onclick="toggleAuth(false)" style="color: var(--primary); cursor: pointer; font-weight: bold;">Inicia sesión</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-container" style="display: none;">
+        
         <div id="section-inicio">
             <header>
                 <div class="form-section">
@@ -99,10 +93,10 @@
                 <div class="balance-card" id="balance-card">
                     <p>Presupuesto Disponible</p>
                     <h2 id="remaining-display">0.00 BS</h2>
-                    <div class="currency-selectors">
-                        <span onclick="changeView('VES')">BS</span>
-                        <span onclick="changeView('USD')">USD</span>
-                        <span onclick="changeView('EUR')">EUR</span>
+                    <div class="currency-selectors" style="display: flex; gap: 8px; justify-content: center; margin-top: 15px;">
+                        <button type="button" class="btn-currency" onclick="changeView('VES')">BS</button>
+                        <button type="button" class="btn-currency" onclick="changeView('USD')">USD</button>
+                        <button type="button" class="btn-currency" onclick="changeView('EUR')">EUR</button>
                     </div>
                 </div>
             </header>
@@ -171,10 +165,49 @@
             </div>
             <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
         </div>
+
+        <div id="section-calendario" style="display: none;">
+            <header><h1 style="text-align: center; margin-bottom: 20px;">Calendario de Gastos</h1></header>
+            
+            <div class="calendar-container" style="background: var(--card-bg); border-radius: 24px; padding: 20px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <button onclick="changeMonth(-1)" class="btn-currency">◀</button>
+                    <h2 id="calendar-month-year" style="font-size: 1.2rem; color: var(--primary);">Mes Año</h2>
+                    <button onclick="changeMonth(1)" class="btn-currency">▶</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; color: var(--text-muted); margin-bottom: 10px; font-size: 0.8rem;">
+                    <div>DOM</div><div>LUN</div><div>MAR</div><div>MIE</div><div>JUE</div><div>VIE</div><div>SAB</div>
+                </div>
+
+                <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+                    </div>
+            </div>
+
+            <div id="calendar-results" style="margin-top: 25px;">
+                <h3 id="date-selected-title" style="font-size: 0.9rem; color: var(--primary); margin-bottom: 15px; text-transform: uppercase;">Selecciona un día en el calendario</h3>
+                <ul id="calendar-list" class="history-list"></ul>
+                <div id="total-day-display" style="margin-top: 10px; text-align: right; font-weight: bold; color: white;"></div>
+            </div>
+            
+            <button class="btn-primary" style="margin-top: 30px;" onclick="showSection('inicio')">Volver al Inicio</button>
+        </div>
     </div>
 
-    <div id="custom-modal" style="display: none;">
-        <div class="modal-content">
+    <div id="tutorial-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000000; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+        <div class="modal-content" style="max-width: 350px; background: #fff; border-radius: 28px; padding: 25px; text-align: left;">
+            <h2 style="color: #000; font-size: 1.5rem; margin-bottom: 15px; text-align: center;">🚀 Guía "Mil Cuentas"</h2>
+            <div style="max-height: 350px; overflow-y: auto; padding-right: 5px;">
+                <p style="color: #444; margin-bottom: 12px; font-size: 14px;"><strong>1. Calendario:</strong> Consulta gastos de días específicos seleccionando la fecha.</p>
+                <p style="color: #444; margin-bottom: 12px; font-size: 14px;"><strong>2. Presupuesto:</strong> Es tu base disponible para gastar.</p>
+                <p style="color: #444; margin-bottom: 12px; font-size: 14px;"><strong>3. Monedas:</strong> Cambia la vista a USD o EUR usando los botones en la tarjeta.</p>
+            </div>
+            <button onclick="closeTutorial()" class="btn-primary" style="margin-top: 20px; width: 100%; background: #D4AF37 !important; color: #000 !important; border-radius: 15px; padding: 12px; font-weight: bold; border: none; cursor: pointer;">¡ENTENDIDO!</button>
+        </div>
+    </div>
+
+    <div id="custom-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 25px; border-radius: 24px; text-align: center; max-width: 300px;">
             <div id="modal-icon" style="font-size: 40px; margin-bottom: 10px;"></div>
             <h3 id="modal-title" style="margin: 0; font-size: 1.2rem; color: #000;"></h3>
             <p id="modal-text" style="font-size: 14px; color: #444; margin-top: 10px;"></p>
@@ -185,22 +218,18 @@
         </div>
     </div>
 
-    <div id="confirm-modal" class="modal-wrapper" style="display: none;">
-        <div class="modal-content" style="border: 2px solid var(--primary);">
-             <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
-             <h3 style="color: var(--primary);">¿Restablecer todo?</h3>
-             <p>Esta acción borrará todo. No se puede deshacer.</p>
-             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="modal-confirm-btn" class="btn-primary" style="flex: 1;">SÍ</button>
-                <button onclick="closeConfirmModal()" class="btn-reset" style="flex: 1;">NO</button>
-             </div>
-        </div>
-    </div>
-
     <script src="script.js"></script>
+    <script>
+        function showTutorial() {
+            document.getElementById('tutorial-modal').style.display = 'flex';
+            if(typeof toggleMenu === 'function') toggleMenu();
+        }
+        function closeTutorial() {
+            document.getElementById('tutorial-modal').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
-
 
 
 
