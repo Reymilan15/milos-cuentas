@@ -10,6 +10,9 @@ let myChart = null;
 let currentChartFilter = '7days';
 let statsOrderAsc = false; 
 
+// --- VARIABLES PARA EL CALENDARIO ---
+let currentCalendarDate = new Date();
+
 let currentUser = JSON.parse(localStorage.getItem('milCuentas_session')) || null;
 
 const fmt = (num) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
@@ -22,6 +25,7 @@ async function fetchBCVRate() {
         if(data && data.promedio) {
             rates.USD = parseFloat(data.promedio);
             rates.EUR = rates.USD * 1.08; 
+            // El modelo actualiza el dólar y convierte a la tasa del banco central diariamente
         }
     } catch (e) { 
         rates.USD = 36.50; 
@@ -33,6 +37,25 @@ async function fetchBCVRate() {
 function updateBCVUI() {
     const rateDisplay = document.getElementById('bcv-rate-display');
     if (rateDisplay) rateDisplay.innerHTML = `<span>💵 $ <b>${fmt(rates.USD)}</b></span>`;
+}
+
+// --- NUEVA FUNCIÓN: CAMBIAR NOMBRE DE CUENTA ---
+async function editProfile() {
+    const newName = prompt("Introduce tu nuevo nombre de perfil:", currentUser.name);
+    
+    if (newName && newName.trim() !== "") {
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(newName)) {
+            await showModal("Error", "El nombre solo puede contener letras", "👤");
+            return;
+        }
+
+        currentUser.name = newName.trim();
+        document.getElementById('side-username').innerText = currentUser.name;
+        
+        localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
+        await syncToCloud();
+        await showModal("Perfil Actualizado", `Nombre cambiado a: ${currentUser.name}`, "✅");
+    }
 }
 
 // --- 2. NAVEGACIÓN ---
@@ -47,6 +70,7 @@ function showSection(sec) {
     document.getElementById('section-inicio').style.display = sec === 'inicio' ? 'block' : 'none';
     document.getElementById('section-stats').style.display = sec === 'stats' ? 'block' : 'none';
     document.getElementById('section-registros').style.display = sec === 'registros' ? 'block' : 'none';
+    document.getElementById('section-calendario').style.display = sec === 'calendario' ? 'block' : 'none'; 
     
     if(sec === 'stats') {
         renderChart();
@@ -54,6 +78,7 @@ function showSection(sec) {
         renderCategoryAnalysis();
     }
     if(sec === 'registros') renderFullHistory();
+    if(sec === 'calendario') renderCalendarGrid();
 
     const sidebar = document.getElementById('sidebar');
     if(sidebar && sidebar.classList.contains('active')) toggleMenu();
@@ -141,7 +166,8 @@ async function setBudget() {
 } 
 
 async function confirmSetBudget(total, limit) {
-    budgetVES = total;
+    const totalGastadoAcumulado = transactions.reduce((s, x) => s + x.valueVES, 0);
+    budgetVES = total + totalGastadoAcumulado;
     spendingLimitVES = limit;
     
     if(currentUser) {
@@ -152,10 +178,91 @@ async function confirmSetBudget(total, limit) {
     }
     
     renderAll();
-    showModal("¡Listo!", "Presupuesto actualizado", "✅");
+    showModal("¡Listo!", `Ahora tienes ${fmt(total)} BS disponibles para gastar.`, "✅");
 }
 
-// --- 5. MODAL Y UTILIDADES ---
+// --- 5. LÓGICA DE CALENDARIO VISUAL ---
+function changeMonth(offset) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+    renderCalendarGrid();
+}
+
+function renderCalendarGrid() {
+    const grid = document.getElementById('calendar-grid');
+    const monthYearLabel = document.getElementById('calendar-month-year');
+    if (!grid || !monthYearLabel) return;
+
+    grid.innerHTML = '';
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    monthYearLabel.innerText = `${monthNames[month].toUpperCase()} ${year}`;
+
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const lastDayDate = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDayIndex; i++) {
+        grid.appendChild(document.createElement('div'));
+    }
+
+    for (let day = 1; day <= lastDayDate; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasExpenses = transactions.some(t => new Date(t.date).toISOString().split('T')[0] === dateStr);
+        
+        const dayBtn = document.createElement('div');
+        dayBtn.className = 'calendar-day-item';
+        dayBtn.setAttribute('data-date', dateStr); 
+        
+        dayBtn.style = `padding: 12px 5px; cursor: pointer; border-radius: 12px; transition: 0.2s; position: relative; color: white; font-weight: bold; border: 1px solid rgba(255,255,255,0.05); text-align: center;`;
+
+        dayBtn.innerHTML = `${day} ${hasExpenses ? '<div class="dot" style="width:5px; height:5px; background:var(--primary); border-radius:50%; position:absolute; bottom:5px; left:50%; transform:translateX(-50%);"></div>' : ''}`;
+
+        dayBtn.onclick = () => {
+            document.querySelectorAll('.calendar-day-item').forEach(d => {
+                d.style.background = 'transparent';
+                d.style.color = 'white';
+                const dDot = d.querySelector('.dot');
+                if(dDot) dDot.style.background = 'var(--primary)';
+            });
+            dayBtn.style.background = 'var(--primary)';
+            dayBtn.style.color = '#000';
+            const dot = dayBtn.querySelector('.dot');
+            if(dot) dot.style.background = '#000';
+            filterBySpecificDate(dateStr);
+        };
+        grid.appendChild(dayBtn);
+    }
+}
+
+function filterBySpecificDate(selectedDate) {
+    const list = document.getElementById('calendar-list');
+    const title = document.getElementById('date-selected-title');
+    const totalDisplay = document.getElementById('total-day-display');
+    const [y, m, d] = selectedDate.split('-');
+    const dateObj = new Date(y, m - 1, d);
+    title.innerText = `Gastos del: ${dateObj.toLocaleDateString()}`;
+
+    const filtered = transactions.filter(t => new Date(t.date).toISOString().split('T')[0] === selectedDate);
+    list.innerHTML = '';
+    let totalDia = 0;
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<p style="color:gray; text-align:center; margin-top:20px;">No hubo gastos este día.</p>`;
+        totalDisplay.innerText = "";
+    } else {
+        filtered.forEach(t => {
+            totalDia += t.valueVES;
+            list.innerHTML += `<li class="transaction-item-mini" style="background:rgba(255,255,255,0.05); margin-bottom:10px; padding:12px; border-radius:12px; display:flex; justify-content:space-between;">
+                <div><b>${t.desc}</b><br><small style="color:var(--primary)">${t.category}</small></div>
+                <div style="text-align:right"><strong>-${fmt(t.valueVES)} BS</strong><br><small>${t.time}</small></div>
+            </li>`;
+        });
+        totalDisplay.innerHTML = `Total del día: <span style="color:var(--danger)">${fmt(totalDia)} BS</span>`;
+    }
+}
+
+// --- 6. MODAL Y UTILIDADES ---
 function showModal(title, msg, icon, isConfirm = false) {
     return new Promise((res) => {
         const m = document.getElementById('custom-modal');
@@ -165,7 +272,13 @@ function showModal(title, msg, icon, isConfirm = false) {
         const okBtn = document.getElementById('modal-ok-btn');
         const cancelBtn = document.getElementById('modal-cancel-btn');
 
-        if(!m) { res(isConfirm ? false : true); return; }
+        // Si por alguna razón el HTML del modal no existe, usamos un alert clásico para no dejar al usuario a ciegas
+        if (!m || !titleEl || !textEl) {
+            console.error("El HTML del modal no se encontró en el DOM.");
+            alert(`${icon} ${title}\n\n${msg}`);
+            res(isConfirm ? false : true);
+            return;
+        }
 
         titleEl.innerText = title;
         textEl.innerText = msg;
@@ -173,14 +286,21 @@ function showModal(title, msg, icon, isConfirm = false) {
         
         cancelBtn.style.display = isConfirm ? "block" : "none";
         okBtn.innerText = isConfirm ? "Confirmar" : "Aceptar";
-
+        
+        // Mostrar el modal
         m.style.display = "flex"; 
 
-        okBtn.onclick = () => { m.style.display = "none"; res(true); };
-        cancelBtn.onclick = () => { m.style.display = "none"; res(false); };
+        okBtn.onclick = () => { 
+            m.style.display = "none"; 
+            res(true); 
+        };
+        
+        cancelBtn.onclick = () => { 
+            m.style.display = "none"; 
+            res(false); 
+        };
     });
 }
-
 async function resetApp() {
     const confirma = await showModal("¿Restablecer todo?", "Se borrarán gastos y presupuesto. No se puede deshacer.", "⚠️", true);
     if (confirma) {
@@ -198,29 +318,121 @@ async function resetApp() {
     }
 }
 
-// --- 6. AUTENTICACIÓN ---
-async function login() {
-    const identifier = document.getElementById('username').value;
-    const password = document.getElementById('login-password').value;
-    try {
-        const res = await fetch(`${API_URL}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, password })
-        });
-        if (res.ok) {
-            currentUser = await res.json();
-            localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
-            entrarALaApp();
-        } else await showModal("Error", "Credenciales incorrectas", "🚫");
-    } catch (e) { await showModal("Error", "Error de conexión", "🌐"); }
+// --- 7. AUTENTICACIÓN (CORREGIDA) ---
+
+function logout() {
+    // 1. Limpiamos la sesión del navegador
+    localStorage.removeItem('milCuentas_session');
+    currentUser = null;
+
+    // 2. Definimos los elementos que queremos manipular
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
+    const appHeader = document.getElementById('app-header-ui');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    // 3. Cambiamos la visibilidad solo si los elementos existen (evita el error de 'style')
+    if (loginScreen) loginScreen.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+    if (appHeader) appHeader.style.display = 'none';
+    
+    // 4. Cerramos el menú lateral si estaba abierto
+    if (sidebar) sidebar.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+
+    // 5. Limpiamos los inputs de login para la próxima vez
+    const userInp = document.getElementById('login-user');
+    const passInp = document.getElementById('login-pass');
+    if (userInp) userInp.value = '';
+    if (passInp) passInp.value = '';
+    
+    console.log("Sesión cerrada correctamente.");
 }
 
+async function login() {
+    try {
+        const userInput = document.getElementById('login-user');
+        const passInput = document.getElementById('login-pass');
+        const userVal = userInput.value.trim();
+        const passVal = passInput.value.trim();
+
+        if (!userVal || !passVal) {
+            lanzarAvisoError("Campos Vacíos", "Por favor, completa todos los campos.");
+            return;
+        }
+
+        // 1. Intento con el Servidor (database.json)
+        try {
+            const res = await fetch(`${API_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: userVal, password: passVal })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                currentUser = data;
+                localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
+                entrarALaApp();
+                return;
+            }
+        } catch (e) {
+            console.warn("Servidor offline, operando en modo local...");
+        }
+
+        // 2. Lógica Universal Local (Para cualquier cuenta)
+        // Buscamos en la lista global de usuarios locales
+        let usersDB = JSON.parse(localStorage.getItem('milCuentas_users')) || {};
+
+        if (usersDB[userVal]) {
+            // Si el usuario existe localmente, validamos su clave
+            if (usersDB[userVal].password === passVal) {
+                currentUser = usersDB[userVal];
+                localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
+                entrarALaApp();
+            } else {
+                lanzarAvisoError("Contraseña Incorrecta", "La clave no coincide para este usuario.");
+            }
+        } else {
+            // Si el usuario NO existe (ni en server ni local), lo creamos dinámicamente
+            // Esto evita que te quedes fuera si el servidor no responde
+            const newUser = {
+                username: userVal,
+                password: passVal,
+                name: userVal,
+                budget: 0,
+                spendingLimit: 0,
+                transactions: []
+            };
+            
+            usersDB[userVal] = newUser;
+            localStorage.setItem('milCuentas_users', JSON.stringify(usersDB));
+            
+            currentUser = newUser;
+            localStorage.setItem('milCuentas_session', JSON.stringify(currentUser));
+            entrarALaApp();
+        }
+
+    } catch (e) {
+        console.error("Error crítico:", e);
+        lanzarAvisoError("Error", "No se pudo procesar el inicio de sesión.");
+    }
+}
+
+// Esta función asegura que el modal sea visible por encima de todo
+function lanzarAvisoError(titulo, mensaje) {
+    // Usamos tu función showModal ya existente que devuelve una promesa
+    showModal(titulo, mensaje, "🚨");
+}
+// Función para cerrar el aviso
+function cerrarModal() {
+    document.getElementById('custom-modal').style.display = 'none';
+}
 async function register() {
     const username = document.getElementById('reg-username').value.trim();
     const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
-    // Ajustado al nuevo ID del HTML
     const password = document.getElementById('reg-password-input').value;
 
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name)) return await showModal("Error", "El nombre solo letras", "👤");
@@ -237,11 +449,16 @@ async function register() {
         if (res.ok) { 
             await showModal("🎉 Éxito", "Cuenta creada", "✅"); 
             toggleAuth(false); 
-        } else await showModal("Error", "Ya registrado", "🚫");
+        } else {
+            const data = await res.json();
+            await showModal("Error", data.message || "Ya registrado", "🚫");
+        }
     } catch (e) { await showModal("Error", "Fallo de conexión", "🌐"); }
 }
 
 function entrarALaApp() {
+    if (!currentUser) return;
+
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     document.getElementById('app-header-ui').style.display = 'flex';
@@ -250,11 +467,16 @@ function entrarALaApp() {
     budgetVES = currentUser.budget || 0;
     spendingLimitVES = currentUser.spendingLimit || 0;
     
-    document.getElementById('side-username').innerText = currentUser.name || "Usuario";
-    document.getElementById('total-budget').value = budgetVES || "";
-    document.getElementById('spending-limit').value = spendingLimitVES || "";
+    const sideName = document.getElementById('side-username');
+    if (sideName) sideName.innerText = currentUser.name || "Usuario";
     
-    fetchBCVRate();
+    const budgetInput = document.getElementById('total-budget');
+    if (budgetInput) budgetInput.value = budgetVES || "";
+    
+    const limitInput = document.getElementById('spending-limit');
+    if (limitInput) limitInput.value = spendingLimitVES || "";
+    
+    fetchBCVRate(); 
     renderAll();
 }
 
@@ -266,6 +488,7 @@ async function syncToCloud() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 username: currentUser.username, 
+                name: currentUser.name, 
                 budget: budgetVES, 
                 spendingLimit: spendingLimitVES, 
                 transactions: transactions 
@@ -274,7 +497,7 @@ async function syncToCloud() {
     } catch (e) {}
 }
 
-// --- 7. RENDERING Y GRÁFICAS ---
+// --- 8. RENDERING Y GRÁFICAS ---
 function renderAll() {
     if(!currentUser) return;
     const total = transactions.reduce((s, x) => s + x.valueVES, 0);
@@ -286,20 +509,12 @@ function renderAll() {
         [...transactions].reverse().slice(0, 8).forEach(t => {
             const li = document.createElement('li');
             li.className = "transaction-item-mini";
-            li.innerHTML = `
-                <div>
-                    <b>${t.desc}</b><br>
-                    <small style="color:var(--primary)">${t.category || 'Otros'}</small>
-                </div>
-                <div style="text-align:right">
-                    <strong style="color:white">-${fmt(t.valueVES)} BS</strong><br>
-                    <span onclick="deleteTransaction(${t.id})" style="color:var(--danger); cursor:pointer; font-size:10px;">Eliminar</span>
-                </div>
-            `;
+            li.innerHTML = `<div><b>${t.desc}</b><br><small style="color:var(--primary)">${t.category || 'Otros'}</small></div>
+                <div style="text-align:right"><strong style="color:white">-${fmt(t.valueVES)} BS</strong><br>
+                <span onclick="deleteTransaction(${t.id})" style="color:var(--danger); cursor:pointer; font-size:10px;">Eliminar</span></div>`;
             list.appendChild(li);
         });
     }
-
     const val = (currentView === "USD") ? rem / rates.USD : (currentView === "EUR") ? rem / rates.EUR : rem;
     const displayElement = document.getElementById('remaining-display');
     if (displayElement) displayElement.innerText = `${fmt(val)} ${currentView}`;
@@ -319,17 +534,12 @@ function renderIndividualStats() {
     if (!container) return;
     container.innerHTML = '';
     let sorted = [...transactions].sort((a, b) => statsOrderAsc ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date));
-
     sorted.forEach(t => {
         const card = document.createElement('div');
         card.className = 'expense-item-card';
-        card.innerHTML = `
-            <div style="display:flex; justify-content:space-between;">
-                <div><small style="color:var(--primary)">${t.category || 'Otros'}</small><br><b>${t.desc}</b></div>
-                <div style="color:var(--danger); font-weight:800;">-${fmt(t.valueVES)} BS</div>
-            </div>
-            <div style="font-size:0.7rem; margin-top:10px; color:gray">📅 ${new Date(t.date).toLocaleDateString()} | Saldo: ${fmt(t.balanceAtMoment || 0)} BS</div>
-        `;
+        card.innerHTML = `<div style="display:flex; justify-content:space-between;"><div><small style="color:var(--primary)">${t.category || 'Otros'}</small><br><b>${t.desc}</b></div>
+            <div style="color:var(--danger); font-weight:800;">-${fmt(t.valueVES)} BS</div></div>
+            <div style="font-size:0.7rem; margin-top:10px; color:gray">📅 ${new Date(t.date).toLocaleDateString()} | Saldo: ${fmt(t.balanceAtMoment || 0)} BS</div>`;
         container.appendChild(card);
     });
 }
@@ -340,7 +550,6 @@ function renderChart() {
     const ctx = canvas.getContext('2d');
     let labels = [], dataValues = [];
     const hoy = new Date();
-
     if (currentChartFilter === '7days') {
         for (let i = 6; i >= 0; i--) {
             const d = new Date(); d.setDate(hoy.getDate() - i);
@@ -356,7 +565,6 @@ function renderChart() {
             dataValues.push(transactions.filter(t => { const f = new Date(t.date); return f > inicio && f <= fin; }).reduce((s, x) => s + x.valueVES, 0));
         }
     }
-
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'line',
@@ -371,21 +579,17 @@ function renderCategoryAnalysis() {
     const totals = {};
     transactions.forEach(t => { const cat = t.category || "Otros"; totals[cat] = (totals[cat] || 0) + t.valueVES; });
     const maxCat = Object.entries(totals).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-
-    analysisContainer.innerHTML = `
-        <div class="analysis-card" style="padding:15px; background:rgba(255,255,255,0.05); border-radius:15px; margin-bottom:15px;">
-            <p>Mayor gasto en: <b style="color:var(--primary)">${maxCat}</b></p>
-            <button onclick="toggleCategoryDetails()" id="btn-details" class="btn-primary" style="padding:5px 10px; font-size:0.8rem;">Ver detalles por categoría</button>
-            <div id="category-details-list" style="display:none; margin-top:10px;"></div>
-        </div>
-    `;
+    analysisContainer.innerHTML = `<div class="analysis-card" style="padding:15px; background:rgba(255,255,255,0.05); border-radius:15px; margin-bottom:15px;">
+        <p>Mayor gasto en: <b style="color:var(--primary)">${maxCat}</b></p>
+        <button onclick="toggleCategoryDetails()" id="btn-details" class="btn-primary" style="padding:5px 10px; font-size:0.8rem;">Ver detalles por categoría</button>
+        <div id="category-details-list" style="display:none; margin-top:10px;"></div></div>`;
     const detailsList = document.getElementById('category-details-list');
     Object.entries(totals).forEach(([cat, monto]) => {
         detailsList.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:5px;"><span>${cat}</span><b>${fmt(monto)} BS</b></div>`;
     });
 }
 
-// --- 8. FUNCIONES DE APOYO ---
+// --- 9. FUNCIONES DE APOYO ---
 async function deleteTransaction(id) {
     if (await showModal("Borrar", "¿Eliminar este gasto?", "🗑️", true)) {
         transactions = transactions.filter(t => t.id !== id);
@@ -401,9 +605,7 @@ function toggleCategoryDetails() {
 function togglePasswordVisibility(inputId, iconId) {
     const passInput = document.getElementById(inputId);
     const iconSpan = document.getElementById(iconId);
-
     if (!passInput || !iconSpan) return;
-
     if (passInput.type === "password") {
         passInput.type = "text";
         iconSpan.innerText = "🔒"; 
@@ -417,26 +619,29 @@ function checkPassStrength() {
     const passInput = document.getElementById('reg-password-input');
     const bar = document.getElementById('pass-strength-bar');
     const text = document.getElementById('pass-text');
-    
     if (!passInput || !bar || !text) return; 
-    
     const pass = passInput.value;
     let strength = 0;
-    
     if (pass.length >= 8) strength += 25;
     if (/[A-Z]/.test(pass)) strength += 25;
     if (/[0-9]/.test(pass)) strength += 25;
     if (/[^A-Za-z0-9]/.test(pass)) strength += 25;
-
     bar.style.width = strength + "%";
-    
     if (strength <= 25) { bar.style.backgroundColor = "#ff4d4d"; text.innerText = "Débil"; }
     else if (strength <= 75) { bar.style.backgroundColor = "#ffd11a"; text.innerText = "Media"; }
     else { bar.style.backgroundColor = "#00cc44"; text.innerText = "Fuerte"; }
 }
 
-function logout() { localStorage.removeItem('milCuentas_session'); location.reload(); }
-function changeView(iso) { currentView = iso; renderAll(); }
+function changeView(iso) { 
+    currentView = iso; 
+    document.querySelectorAll('.btn-currency').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.innerText === iso || (btn.innerText === 'BS' && iso === 'VES')) {
+            btn.classList.add('active');
+        }
+    });
+    renderAll(); 
+}
 
 function toggleAuth(isReg) {
     document.getElementById('login-form-container').style.display = isReg ? 'none' : 'block';
@@ -453,11 +658,64 @@ function updateChartFilter(f) {
 
 function toggleStatsOrder() { statsOrderAsc = !statsOrderAsc; renderIndividualStats(); }
 
-window.onload = () => {
-    fetchBCVRate();
-    if (currentUser) entrarALaApp();
-};
+function showTutorial() {
+    const tutorial = document.getElementById('tutorial-modal');
+    if (tutorial) {
+        tutorial.style.display = 'flex';
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('active')) toggleMenu();
+    }
+}
 
+function closeTutorial() {
+    const tutorial = document.getElementById('tutorial-modal');
+    if (tutorial) tutorial.style.display = 'none';
+}
+function toggleAuthScreens(screen) {
+    const loginForm = document.getElementById('login-form-container');
+    const registerForm = document.getElementById('register-form-container');
+    
+    if (screen === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    } else {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    }
+}
+
+// 2. FUNCIÓN PARA VER/OCULTAR CONTRASEÑA
+function togglePassword() {
+    // Intentamos obtener ambos inputs (login y registro)
+    const passLogin = document.getElementById('login-pass');
+    const passReg = document.getElementById('register-pass');
+    
+    // Si existe el de login, cambiamos su tipo
+    if (passLogin) {
+        passLogin.type = passLogin.type === 'password' ? 'text' : 'password';
+    }
+    
+    // Si existe el de registro, también
+    if (passReg) {
+        passReg.type = passReg.type === 'password' ? 'text' : 'password';
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const session = localStorage.getItem('milCuentas_session');
+    
+    if (session) {
+        currentUser = JSON.parse(session);
+        // Pequeño delay de 50ms para asegurar que el DOM esté listo para recibir estilos
+        setTimeout(() => {
+            entrarALaApp();
+        }, 50);
+    } else {
+        // Si no hay sesión, nos aseguramos de ver solo el login
+        const loginScreen = document.getElementById('login-screen');
+        if (loginScreen) loginScreen.style.display = 'flex';
+    }
+});
 
 
 
